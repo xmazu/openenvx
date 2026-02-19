@@ -1,0 +1,32 @@
+# Binaries
+openenvx
+*.exe
+dist/
+
+# Go
+*.o
+*.a
+*.so
+vendor/
+
+# Test
+*.test
+*.out
+coverage.html
+coverage.out
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+
+# Temporary
+*.tmp
+*.temp
