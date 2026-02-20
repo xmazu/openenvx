@@ -57,7 +57,7 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 	}
 
 	marker := workspace.FindMarker(wsRoot)
-	fmt.Fprintln(os.Stderr, tui.Header(fmt.Sprintf("Workspace: %s (%s)", wsRoot, workspace.FormatMarkerForDisplay(marker))))
+	fmt.Fprintln(os.Stdout, tui.Header(fmt.Sprintf("Workspace: %s (%s)", wsRoot, workspace.FormatMarkerForDisplay(marker))))
 
 	masterKey, err := crypto.NewAsymmetricStrategy(identity).GetMasterKey()
 	if err != nil {
@@ -86,7 +86,7 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 		}
 
 		if isEncrypted {
-			fmt.Fprintf(os.Stderr, "  %s %s (already encrypted)\n", tui.Muted("•"), rel)
+			fmt.Fprintf(os.Stdout, "  %s %s (already encrypted)\n", tui.Muted("•"), rel)
 			totalSkipped++
 			continue
 		}
@@ -102,15 +102,15 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		fmt.Fprintf(os.Stderr, "  %s %s encrypted\n", tui.Success("✓"), rel)
+		fmt.Fprintf(os.Stdout, "  %s %s encrypted\n", tui.Success("✓"), rel)
 		totalEncrypted++
 
 		printCommentedSecretWarnings(result.CommentedSecrets)
 	}
 
-	fmt.Fprintf(os.Stderr, "\n%s Migrated %d .env file(s)\n", tui.Success("Done."), totalEncrypted)
+	fmt.Fprintf(os.Stdout, "\n%s Migrated %d .env file(s)\n", tui.Success("Done."), totalEncrypted)
 	if totalSkipped > 0 {
-		fmt.Fprintf(os.Stderr, "%s %d file(s) already encrypted (skipped)\n", tui.Muted("•"), totalSkipped)
+		fmt.Fprintf(os.Stdout, "%s %d file(s) already encrypted (skipped)\n", tui.Muted("•"), totalSkipped)
 	}
 	if totalMismatched > 0 {
 		fmt.Fprintf(os.Stderr, "%s %d file(s) have different keys (skipped, manual intervention needed)\n", tui.Warning("Note:"), totalMismatched)

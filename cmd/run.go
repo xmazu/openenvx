@@ -152,7 +152,7 @@ func runWithWatch(envMap map[string]string, files []string, command string, args
 	for {
 		select {
 		case <-changes:
-			fmt.Fprintf(os.Stderr, "⚡ .env changed (%d files watched), restarting...\n", len(fw.Files()))
+			fmt.Fprintf(os.Stdout, "⚡ .env changed (%d files watched), restarting...\n", len(fw.Files()))
 
 			if runner.Running() {
 				if err := runner.Stop(); err != nil {

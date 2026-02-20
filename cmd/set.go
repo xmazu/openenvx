@@ -64,7 +64,7 @@ func runSet(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Fprintf(os.Stderr, "%s %s set\n", tui.Success("✓"), tui.Label(key))
+	fmt.Fprintf(os.Stdout, "%s %s set\n", tui.Success("✓"), tui.Label(key))
 	return nil
 }
 

@@ -94,14 +94,14 @@ func runLs(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	var stderr io.Writer = os.Stderr
+	var stdout io.Writer = os.Stdout
 	if cmd != nil {
-		stderr = cmd.ErrOrStderr()
+		stdout = cmd.OutOrStdout()
 	}
 
 	if isWorkspace {
 		marker := workspace.FindMarker(root)
-		fmt.Fprintf(stderr, "%s%s (%s)\n\n", tui.Label("Workspace: "), root, workspace.FormatMarkerForDisplay(marker))
+		fmt.Fprintf(stdout, "%s%s (%s)\n\n", tui.Label("Workspace: "), root, workspace.FormatMarkerForDisplay(marker))
 	}
 
 	tree := workspace.BuildEnvTree(paths)

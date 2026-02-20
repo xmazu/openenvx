@@ -119,7 +119,7 @@ func runRotateWorkspace(cmd *cobra.Command, wsRoot string) error {
 	}
 
 	marker := workspace.FindMarker(wsRoot)
-	fmt.Fprintf(cmd.ErrOrStderr(), "Workspace: %s (%s)\n\n", wsRoot, workspace.FormatMarkerForDisplay(marker))
+	fmt.Fprintf(cmd.OutOrStdout(), "Workspace: %s (%s)\n\n", wsRoot, workspace.FormatMarkerForDisplay(marker))
 
 	masterKey, err := runenv.GetMasterKeyForWorkspace(wsRoot)
 	if err != nil {
@@ -130,7 +130,7 @@ func runRotateWorkspace(cmd *cobra.Command, wsRoot string) error {
 	var rotated, skipped, failed int
 	for _, envPath := range files {
 		relPath, _ := filepath.Rel(wsRoot, envPath)
-		fmt.Fprintf(cmd.ErrOrStderr(), "Rotating %s...\n", relPath)
+		fmt.Fprintf(cmd.OutOrStdout(), "Rotating %s...\n", relPath)
 
 		envFile, err := envfile.Load(envPath)
 		if err != nil {
@@ -147,7 +147,7 @@ func runRotateWorkspace(cmd *cobra.Command, wsRoot string) error {
 		}
 
 		if len(decrypted) == 0 {
-			fmt.Fprintf(cmd.ErrOrStderr(), "  No encrypted variables\n")
+			fmt.Fprintf(cmd.OutOrStdout(), "  No encrypted variables\n")
 			skipped++
 			continue
 		}
@@ -163,7 +163,7 @@ func runRotateWorkspace(cmd *cobra.Command, wsRoot string) error {
 		}
 
 		if rotateDryRun {
-			fmt.Fprintf(cmd.ErrOrStderr(), "  dry-run: would re-encrypt %d variable(s)\n", len(decrypted))
+			fmt.Fprintf(cmd.OutOrStdout(), "  dry-run: would re-encrypt %d variable(s)\n", len(decrypted))
 			rotated++
 			continue
 		}
@@ -173,7 +173,7 @@ func runRotateWorkspace(cmd *cobra.Command, wsRoot string) error {
 			failed++
 			continue
 		}
-		fmt.Fprintf(cmd.ErrOrStderr(), "  Rotated %d variable(s)\n", len(decrypted))
+		fmt.Fprintf(cmd.OutOrStdout(), "  Rotated %d variable(s)\n", len(decrypted))
 		rotated++
 	}
 

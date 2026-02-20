@@ -77,7 +77,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		}
 		createdEmptyEnvPath = envPath
 		files = []string{envPath}
-		fmt.Fprintf(os.Stderr, "%s Created %s\n", tui.Success("✓"), envPath)
+		fmt.Fprintf(os.Stdout, "%s Created %s\n", tui.Success("✓"), envPath)
 	}
 
 	masterKey, err := crypto.NewAsymmetricStrategy(identity).GetMasterKey()
@@ -96,7 +96,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		rel, _ := filepath.Rel(wsRoot, f)
 
 		if f == createdEmptyEnvPath {
-			fmt.Fprintf(os.Stderr, "  %s %s (created)\n", tui.Muted("•"), rel)
+			fmt.Fprintf(os.Stdout, "  %s %s (created)\n", tui.Muted("•"), rel)
 			continue
 		}
 
@@ -107,7 +107,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		}
 
 		if result.AlreadyEncrypted {
-			fmt.Fprintf(os.Stderr, "  %s %s (already encrypted)\n", tui.Muted("•"), rel)
+			fmt.Fprintf(os.Stdout, "  %s %s (already encrypted)\n", tui.Muted("•"), rel)
 			totalSkipped++
 			continue
 		}
@@ -117,7 +117,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		fmt.Fprintf(os.Stderr, "  %s %s encrypted\n", tui.Success("✓"), rel)
+		fmt.Fprintf(os.Stdout, "  %s %s encrypted\n", tui.Success("✓"), rel)
 		totalEncrypted++
 
 		printCommentedSecretWarnings(result.CommentedSecrets)
@@ -126,20 +126,20 @@ func runInit(cmd *cobra.Command, args []string) error {
 	if err := workspace.WriteWorkspaceFile(wsRoot, &workspace.WorkspaceConfig{PublicKey: publicKey}); err != nil {
 		return fmt.Errorf("write .openenvx.yaml: %w", err)
 	}
-	fmt.Fprintf(os.Stderr, "  %s Created .openenvx.yaml\n", tui.Success("✓"))
+	fmt.Fprintf(os.Stdout, "  %s Created .openenvx.yaml\n", tui.Success("✓"))
 
 	marker := workspace.FindMarker(wsRoot)
 	markerStr := workspace.FormatMarkerForDisplay(marker)
-	fmt.Fprintf(os.Stderr, "\n%s Initialized workspace at %s (%s)\n", tui.Success("✓"), wsRoot, markerStr)
-	fmt.Fprintf(os.Stderr, "%s %d .env file(s) encrypted", tui.Muted("•"), totalEncrypted)
+	fmt.Fprintf(os.Stdout, "\n%s Initialized workspace at %s (%s)\n", tui.Success("✓"), wsRoot, markerStr)
+	fmt.Fprintf(os.Stdout, "%s %d .env file(s) encrypted", tui.Muted("•"), totalEncrypted)
 	if totalSkipped > 0 {
-		fmt.Fprintf(os.Stderr, ", %d skipped", totalSkipped)
+		fmt.Fprintf(os.Stdout, ", %d skipped", totalSkipped)
 	}
-	fmt.Fprintln(os.Stderr)
-	fmt.Fprintf(os.Stderr, "%s Share the private key with your team (e.g. 1Password). New teammates: %s\n", tui.Muted("Tip:"), tui.Label("openenvx key add"))
+	fmt.Fprintln(os.Stdout)
+	fmt.Fprintf(os.Stdout, "%s Share the private key with your team (e.g. 1Password). New teammates: %s\n", tui.Muted("Tip:"), tui.Label("openenvx key add"))
 
 	if runCmd := workspace.SuggestDevRunCommand(wsRoot); runCmd != "" {
-		fmt.Fprintf(os.Stderr, "%s Run your dev server with decrypted env: %s\n", tui.Muted("Tip:"), tui.Label("openenvx run -- "+runCmd))
+		fmt.Fprintf(os.Stdout, "%s Run your dev server with decrypted env: %s\n", tui.Muted("Tip:"), tui.Label("openenvx run -- "+runCmd))
 	}
 
 	return nil

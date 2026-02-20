@@ -108,7 +108,7 @@ func runKeyAdd(cmd *cobra.Command, args []string) error {
 		absCwd, _ := filepath.Abs(cwd)
 		if wsRoot != absCwd {
 			marker := workspace.FindMarker(wsRoot)
-			fmt.Fprintf(os.Stderr, "%s %s (%s)\n", tui.Header("Workspace detected at"), wsRoot, workspace.FormatMarkerForDisplay(marker))
+			fmt.Fprintf(os.Stdout, "%s %s (%s)\n", tui.Header("Workspace detected at"), wsRoot, workspace.FormatMarkerForDisplay(marker))
 		}
 
 		wsKey, _ := workspace.GetWorkspacePublicKey(wsRoot)
@@ -125,8 +125,8 @@ func runKeyAdd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to save key: %w", err)
 	}
 
-	fmt.Fprintf(os.Stderr, "%s Key stored for workspace: %s\n", tui.Success("✓"), wsRoot)
-	fmt.Fprintf(os.Stderr, "%s Public key: %s\n", tui.Muted("  "), tui.FormatKeyDisplay(publicKey))
+	fmt.Fprintf(os.Stdout, "%s Key stored for workspace: %s\n", tui.Success("✓"), wsRoot)
+	fmt.Fprintf(os.Stdout, "%s Public key: %s\n", tui.Muted("  "), tui.FormatKeyDisplay(publicKey))
 	return nil
 }
 

@@ -61,7 +61,7 @@ func runUnmigrate(cmd *cobra.Command, args []string) error {
 	}
 
 	marker := workspace.FindMarker(wsRoot)
-	fmt.Fprintln(os.Stderr, tui.Header(fmt.Sprintf("Workspace: %s (%s)", wsRoot, workspace.FormatMarkerForDisplay(marker))))
+	fmt.Fprintln(os.Stdout, tui.Header(fmt.Sprintf("Workspace: %s (%s)", wsRoot, workspace.FormatMarkerForDisplay(marker))))
 
 	masterKey, err := crypto.NewAsymmetricStrategy(identity).GetMasterKey()
 	if err != nil {
@@ -88,7 +88,7 @@ func runUnmigrate(cmd *cobra.Command, args []string) error {
 		}
 
 		if !isEncrypted {
-			fmt.Fprintf(os.Stderr, "  %s %s (already plaintext)\n", tui.Muted("•"), rel)
+			fmt.Fprintf(os.Stdout, "  %s %s (already plaintext)\n", tui.Muted("•"), rel)
 			totalPlaintext++
 			continue
 		}
@@ -104,13 +104,13 @@ func runUnmigrate(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		fmt.Fprintf(os.Stderr, "  %s %s decrypted\n", tui.Success("✓"), rel)
+		fmt.Fprintf(os.Stdout, "  %s %s decrypted\n", tui.Success("✓"), rel)
 		totalDecrypted++
 	}
 
-	fmt.Fprintf(os.Stderr, "\n%s Decrypted %d .env file(s)\n", tui.Success("Done."), totalDecrypted)
+	fmt.Fprintf(os.Stdout, "\n%s Decrypted %d .env file(s)\n", tui.Success("Done."), totalDecrypted)
 	if totalPlaintext > 0 {
-		fmt.Fprintf(os.Stderr, "%s %d file(s) already plaintext (skipped)\n", tui.Muted("•"), totalPlaintext)
+		fmt.Fprintf(os.Stdout, "%s %d file(s) already plaintext (skipped)\n", tui.Muted("•"), totalPlaintext)
 	}
 
 	if unmigrateRemoveOpenenvx {
@@ -118,11 +118,11 @@ func runUnmigrate(cmd *cobra.Command, args []string) error {
 		if err := os.Remove(openenvxPath); err != nil {
 			fmt.Fprintf(os.Stderr, "%s Failed to remove %s: %v\n", tui.Warning("Warning:"), workspace.WorkspaceFileName, err)
 		} else {
-			fmt.Fprintf(os.Stderr, "%s Removed %s file\n", tui.Success("✓"), workspace.WorkspaceFileName)
+			fmt.Fprintf(os.Stdout, "%s Removed %s file\n", tui.Success("✓"), workspace.WorkspaceFileName)
 		}
 	} else {
-		fmt.Fprintf(os.Stderr, "\n%s The %s file was preserved.\n", tui.Muted("Note:"), workspace.WorkspaceFileName)
-		fmt.Fprintf(os.Stderr, "%s Run with --remove-openenvx to remove it, or delete it manually.\n", tui.Muted("Tip:"))
+		fmt.Fprintf(os.Stdout, "\n%s The %s file was preserved.\n", tui.Muted("Note:"), workspace.WorkspaceFileName)
+		fmt.Fprintf(os.Stdout, "%s Run with --remove-openenvx to remove it, or delete it manually.\n", tui.Muted("Tip:"))
 	}
 
 	return nil
