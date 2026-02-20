@@ -2,11 +2,15 @@
 
 **.env enhanced. Secured. Local-first. Agent-ready by design.**
 
-Production-grade, zero-configuration secret management. Your keys, your data-Vault-style envelope encryption that runs on your machine. Built for developers and AI agents.
+
+Zero-configuration secret management. Your keys, your data-Vault-style envelope encryption that runs on your machine. Built for developers and AI agents.
 
 Unbiased. No vendor lock-in. No accounts. No cloud required.
 
 Made for people, by people. Fully open source.
+
+> ⚠️ **Early Development**: This tool is currently in early development. Features and APIs may change.
+
 
 ---
 
