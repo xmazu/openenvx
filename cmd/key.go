@@ -80,7 +80,7 @@ func runKeyAdd(cmd *cobra.Command, args []string) error {
 		}
 		raw = string(data)
 	default:
-		raw, err = tui.HiddenInput("Paste private key")
+		raw, err = tui.PlaintextInput("Paste private key")
 		if err != nil {
 			return fmt.Errorf("failed to read key: %w", err)
 		}

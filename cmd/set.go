@@ -26,16 +26,18 @@ are stored as plaintext; other values are encrypted.`,
 }
 
 var setFile string
+var setValue string
 
 func init() {
 	setCmd.Flags().StringVarP(&setFile, "file", "f", ".env", "Path to .env file")
+	setCmd.Flags().StringVarP(&setValue, "value", "v", "", "Value to set")
 	rootCmd.AddCommand(setCmd)
 }
 
 func runSet(cmd *cobra.Command, args []string) error {
 	key := args[0]
-	if strings.Contains(key, "=") {
-		return fmt.Errorf("invalid key: use openenvx set KEY (value is read after the command starts)")
+	if err := ValidateKey(key); err != nil {
+		return err
 	}
 
 	value, err := readSetValue(key)
@@ -43,7 +45,38 @@ func runSet(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	envFile, err := envfile.Load(setFile)
+	absPath, err := filepath.Abs(setFile)
+	if err != nil {
+		return fmt.Errorf("resolve path: %w", err)
+	}
+
+	wsRoot, err := workspace.FindRoot(filepath.Dir(absPath))
+	if err != nil {
+		return fmt.Errorf("find workspace: %w", err)
+	}
+
+	masterKey, err := runenv.GetMasterKeyForWorkspace(wsRoot)
+	if err != nil {
+		return err
+	}
+
+	if err := SetEnvValue(setFile, key, value, masterKey); err != nil {
+		return err
+	}
+
+	fmt.Fprintf(os.Stderr, "%s %s set\n", tui.Success("✓"), tui.Label(key))
+	return nil
+}
+
+func ValidateKey(key string) error {
+	if strings.Contains(key, "=") {
+		return fmt.Errorf("invalid key: use openenvx set KEY (value is read after the command starts)")
+	}
+	return nil
+}
+
+func SetEnvValue(filePath, key, value string, masterKey *crypto.MasterKey) error {
+	envFile, err := envfile.Load(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to load .env file: %w", err)
 	}
@@ -52,27 +85,11 @@ func runSet(cmd *cobra.Command, args []string) error {
 	if detector.ShouldSkip(key, value) {
 		envFile.Set(key, value)
 	} else {
-		absPath, err := filepath.Abs(setFile)
-		if err != nil {
-			return fmt.Errorf("resolve path: %w", err)
-		}
-		wsRoot, err := workspace.FindRoot(filepath.Dir(absPath))
-		if err != nil {
-			return fmt.Errorf("find workspace: %w", err)
-		}
-
-		masterKey, err := runenv.GetMasterKeyForWorkspace(wsRoot)
-		if err != nil {
-			return err
-		}
-
 		env := crypto.NewEnvelope(masterKey)
-
 		encrypted, err := env.Encrypt([]byte(value), key)
 		if err != nil {
 			return fmt.Errorf("failed to encrypt: %w", err)
 		}
-
 		envFile.Set(key, encrypted.String())
 	}
 
@@ -80,10 +97,12 @@ func runSet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to save .env file: %w", err)
 	}
 
-	fmt.Fprintf(os.Stderr, "%s %s set\n", tui.Success("✓"), tui.Label(key))
 	return nil
 }
 
 func readSetValue(key string) (string, error) {
-	return tui.HiddenInput(fmt.Sprintf("Value for %s", key))
+	if setValue != "" {
+		return setValue, nil
+	}
+	return tui.PlaintextInput(fmt.Sprintf("Value for %s", key))
 }
