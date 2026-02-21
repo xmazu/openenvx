@@ -30,7 +30,7 @@ openenvx set DATABASE_URL
 openenvx run -- npm start
 ```
 
-Or install via Go: `go install github.com/openenvx/cli@latest`
+Or install via Go: `go install github.com/xmazu/openenvx@latest`
 
 ---
 

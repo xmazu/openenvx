@@ -91,7 +91,7 @@ main() {
     DOWNLOAD_URL="https://github.com/${REPO}/releases/download/v${VERSION}/${BINARY_FILE}"
 
     if [ -x "${INSTALL_DIR}/${BINARY_NAME}" ]; then
-        INSTALLED_VERSION=$("${INSTALL_DIR}/${BINARY_NAME}" --version 2>/dev/null | grep -oP 'v\K[0-9.]+' || echo "unknown")
+        INSTALLED_VERSION=$("${INSTALL_DIR}/${BINARY_NAME}" --version 2>/dev/null | sed -nE 's/.*v([0-9.]+).*/\1/p' || echo "unknown")
         if [ "$INSTALLED_VERSION" = "$VERSION" ]; then
             print_success "OpenEnvX v${VERSION} is already installed at ${INSTALL_DIR}/${BINARY_NAME}"
             echo "" >&2
