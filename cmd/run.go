@@ -3,7 +3,9 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"github.com/spf13/cobra"
 	"github.com/xmazu/openenvx/internal/runenv"
@@ -149,8 +151,21 @@ func runWithWatch(envMap map[string]string, files []string, command string, args
 		return fmt.Errorf("start command: %w", err)
 	}
 
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(sigCh)
+
 	for {
 		select {
+		case sig := <-sigCh:
+			if runner.Running() {
+				_ = runner.Stop()
+			}
+			if sig == syscall.SIGTERM {
+				os.Exit(143)
+			}
+			os.Exit(130) // typical exit for SIGINT (Ctrl+C)
+
 		case <-changes:
 			fmt.Fprintf(os.Stdout, "⚡ .env changed (%d files watched), restarting...\n", len(fw.Files()))
 

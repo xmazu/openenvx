@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/xmazu/openenvx/internal/crypto"
@@ -685,6 +686,262 @@ func TestWorkspaceFindRoot(t *testing.T) {
 		}
 		if root != subDir {
 			t.Errorf("FindRoot() = %q, want %q (no markers, should return original)", root, subDir)
+		}
+	})
+}
+
+// --- Unit tests for business logic only (mocked deps, no real exec/syscall) ---
+
+func TestMergeOverlayEnv(t *testing.T) {
+	tests := []struct {
+		name    string
+		env     map[string]string
+		overlay []string
+		overload bool
+		want    map[string]string
+		wantErr bool
+	}{
+		{
+			name:    "empty overlay leaves env unchanged",
+			env:     map[string]string{"A": "1"},
+			overlay: nil,
+			overload: false,
+			want:    map[string]string{"A": "1"},
+		},
+		{
+			name:    "overlay adds new key",
+			env:     map[string]string{"A": "1"},
+			overlay: []string{"B=2"},
+			overload: false,
+			want:    map[string]string{"A": "1", "B": "2"},
+		},
+		{
+			name:    "overlay without overload does not override",
+			env:     map[string]string{"A": "1"},
+			overlay: []string{"A=2"},
+			overload: false,
+			want:    map[string]string{"A": "1"},
+		},
+		{
+			name:    "overlay with overload overrides",
+			env:     map[string]string{"A": "1"},
+			overlay: []string{"A=2"},
+			overload: true,
+			want:    map[string]string{"A": "2"},
+		},
+		{
+			name:    "invalid overlay returns error",
+			env:     map[string]string{},
+			overlay: []string{"NO_EQUALS"},
+			overload: false,
+			wantErr: true,
+		},
+		{
+			name:    "empty key in overlay returns error",
+			env:     map[string]string{},
+			overlay: []string{"=value"},
+			overload: false,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := make(map[string]string)
+			for k, v := range tt.env {
+				env[k] = v
+			}
+			err := MergeOverlayEnv(env, tt.overlay, tt.overload)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("MergeOverlayEnv() err = %v, wantErr = %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
+			}
+			for k, wantV := range tt.want {
+				if env[k] != wantV {
+					t.Errorf("env[%q] = %q, want %q", k, env[k], wantV)
+				}
+			}
+			for k := range env {
+				if _, ok := tt.want[k]; !ok {
+					t.Errorf("unexpected env key %q", k)
+				}
+			}
+		})
+	}
+}
+
+func TestBuildCmdEnv(t *testing.T) {
+	// Only tests our logic: overlay keys appear as KEY=value. os.Environ() is real but we only assert on our entries.
+	got := buildCmdEnv(map[string]string{"MY_KEY": "my_value", "OTHER": "x"})
+	var found int
+	for _, s := range got {
+		if s == "MY_KEY=my_value" {
+			found++
+		}
+		if s == "OTHER=x" {
+			found++
+		}
+	}
+	if found != 2 {
+		t.Errorf("buildCmdEnv() should contain MY_KEY=my_value and OTHER=x, got %d matches in %v", found, got)
+	}
+}
+
+func TestRedactOutput(t *testing.T) {
+	tests := []struct {
+		name   string
+		data   []byte
+		envMap map[string]string
+		want   string
+	}{
+		{
+			name:   "empty env leaves data unchanged",
+			data:   []byte("hello"),
+			envMap: nil,
+			want:   "hello",
+		},
+		{
+			name:   "secret replaced by redaction placeholder",
+			data:   []byte("secret is sk_live_abc"),
+			envMap: map[string]string{"API_KEY": "sk_live_abc"},
+			want:   "secret is [REDACTED:API_KEY]",
+		},
+		{
+			name:   "empty value not replaced",
+			data:   []byte("foo"),
+			envMap: map[string]string{"K": ""},
+			want:   "foo",
+		},
+		{
+			name:   "multiple secrets redacted",
+			data:   []byte("a=X b=Y"),
+			envMap: map[string]string{"A": "X", "B": "Y"},
+			want:   "a=[REDACTED:A] b=[REDACTED:B]",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := redactOutput(tt.data, tt.envMap)
+			if string(got) != tt.want {
+				t.Errorf("redactOutput() = %q, want %q", string(got), tt.want)
+			}
+		})
+	}
+}
+
+func TestGetChildPids(t *testing.T) {
+	oldPgrep := execPgrep
+	defer func() { execPgrep = oldPgrep }()
+
+	t.Run("parses pgrep output and returns pids", func(t *testing.T) {
+		execPgrep = func(ppid int) ([]byte, error) {
+			if ppid == 100 {
+				return []byte("200\n300\n"), nil
+			}
+			return nil, nil
+		}
+		pids, err := getChildPids(100)
+		if err != nil {
+			t.Fatalf("getChildPids() err = %v", err)
+		}
+		if len(pids) != 2 {
+			t.Fatalf("getChildPids() len = %d, want 2", len(pids))
+		}
+		if pids[0] != 200 || pids[1] != 300 {
+			t.Errorf("getChildPids() = %v, want [200, 300]", pids)
+		}
+	})
+
+	t.Run("recurses into children", func(t *testing.T) {
+		execPgrep = func(ppid int) ([]byte, error) {
+			switch ppid {
+			case 100:
+				return []byte("200\n"), nil
+			case 200:
+				return []byte("201\n202\n"), nil
+			default:
+				return nil, nil
+			}
+		}
+		pids, err := getChildPids(100)
+		if err != nil {
+			t.Fatalf("getChildPids() err = %v", err)
+		}
+		// Order: 200, then 201, 202 (children of 200)
+		if len(pids) != 3 {
+			t.Fatalf("getChildPids() len = %d, want 3", len(pids))
+		}
+		gotSet := make(map[int]bool)
+		for _, p := range pids {
+			gotSet[p] = true
+		}
+		for _, want := range []int{200, 201, 202} {
+			if !gotSet[want] {
+				t.Errorf("getChildPids() missing pid %d, got %v", want, pids)
+			}
+		}
+	})
+
+	t.Run("pgrep error returns error", func(t *testing.T) {
+		execPgrep = func(int) ([]byte, error) {
+			return nil, os.ErrNotExist
+		}
+		_, err := getChildPids(99)
+		if err == nil {
+			t.Error("getChildPids() should return error when pgrep fails")
+		}
+	})
+
+	t.Run("empty or whitespace only returns no pids", func(t *testing.T) {
+		execPgrep = func(int) ([]byte, error) {
+			return []byte("\n  \n"), nil
+		}
+		pids, err := getChildPids(1)
+		if err != nil {
+			t.Fatalf("getChildPids() err = %v", err)
+		}
+		if len(pids) != 0 {
+			t.Errorf("getChildPids() = %v, want []", pids)
+		}
+	})
+}
+
+func TestKillProcessTree(t *testing.T) {
+	oldKill := killFunc
+	defer func() { killFunc = oldKill }()
+
+	t.Run("sends SIGTERM to group and children", func(t *testing.T) {
+		var killed []struct{ pid int; sig syscall.Signal }
+		killFunc = func(pid int, sig syscall.Signal) error {
+			killed = append(killed, struct{ pid int; sig syscall.Signal }{pid, sig})
+			return nil
+		}
+		execPgrepOld := execPgrep
+		execPgrep = func(ppid int) ([]byte, error) {
+			if ppid == 42 {
+				return []byte("100\n101\n"), nil
+			}
+			return nil, nil
+		}
+		defer func() { execPgrep = execPgrepOld }()
+
+		err := killProcessTree(42)
+		if err != nil {
+			t.Fatalf("killProcessTree() err = %v", err)
+		}
+		// Expect: SIGTERM to 100, 101 (children), then to -42 (group)
+		if len(killed) != 3 {
+			t.Fatalf("killProcessTree() should have 3 kill calls, got %d: %v", len(killed), killed)
+		}
+		for i, k := range killed {
+			if k.sig != syscall.SIGTERM {
+				t.Errorf("kill[%d] sig = %v, want SIGTERM", i, k.sig)
+			}
+		}
+		// Last call must be group kill
+		if killed[2].pid != -42 {
+			t.Errorf("last kill pid = %d, want -42 (group)", killed[2].pid)
 		}
 	})
 }

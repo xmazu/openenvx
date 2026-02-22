@@ -107,7 +107,7 @@ func setupCommand(command string, args []string, envMap map[string]string, workd
 	if workdir != "" {
 		cmd.Dir = workdir
 	}
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	// Do not set Setpgid: child stays in our process group so Ctrl+C kills it too.
 	return cmd
 }
 
@@ -136,7 +136,7 @@ func RunWithEnvRedactedFromMap(envMap map[string]string, workdir, command string
 	if workdir != "" {
 		cmd.Dir = workdir
 	}
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	// Do not set Setpgid: child stays in our process group so Ctrl+C kills it too.
 
 	runErr := cmd.Run()
 	stdoutBytes := redactOutput([]byte(stdout.String()), envMap)
@@ -369,7 +369,7 @@ func RunWithEnvCaptured(envMap map[string]string, workdir, command string, args 
 	if workdir != "" {
 		cmd.Dir = workdir
 	}
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	// Do not set Setpgid: child stays in our process group so Ctrl+C kills it too.
 
 	runErr := cmd.Run()
 	result := &RunResult{
@@ -490,6 +490,45 @@ func (r *ProcessRunner) Start() error {
 	return r.cmd.Start()
 }
 
+var execPgrep = func(ppid int) ([]byte, error) {
+	return exec.Command("pgrep", "-P", fmt.Sprintf("%d", ppid)).Output()
+}
+
+// killFunc is injectable for tests; production uses syscall.Kill.
+var killFunc = func(pid int, sig syscall.Signal) error {
+	return syscall.Kill(pid, sig)
+}
+
+func getChildPids(rootPgid int) ([]int, error) {
+	out, err := execPgrep(rootPgid)
+	if err != nil {
+		return nil, err
+	}
+	var pids []int
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if line == "" {
+			continue
+		}
+		var pid int
+		if _, err := fmt.Sscanf(line, "%d", &pid); err == nil && pid > 0 {
+			pids = append(pids, pid)
+			children, _ := getChildPids(pid)
+			pids = append(pids, children...)
+		}
+	}
+	return pids, nil
+}
+
+func killProcessTree(pgid int) error {
+	pids, err := getChildPids(pgid)
+	if err == nil {
+		for _, pid := range pids {
+			_ = killFunc(pid, syscall.SIGTERM)
+		}
+	}
+	return killFunc(-pgid, syscall.SIGTERM)
+}
+
 func (r *ProcessRunner) Stop() error {
 	if r.cmd == nil || r.cmd.Process == nil {
 		return nil
@@ -498,7 +537,7 @@ func (r *ProcessRunner) Stop() error {
 	if err != nil {
 		return r.cmd.Process.Kill()
 	}
-	if err := syscall.Kill(-pgid, syscall.SIGTERM); err != nil {
+	if err := killProcessTree(pgid); err != nil {
 		return r.cmd.Process.Kill()
 	}
 	done := make(chan error, 1)
@@ -507,7 +546,11 @@ func (r *ProcessRunner) Stop() error {
 	}()
 	select {
 	case <-time.After(5 * time.Second):
-		_ = syscall.Kill(-pgid, syscall.SIGKILL)
+		pids, _ := getChildPids(pgid)
+		for _, pid := range pids {
+			_ = killFunc(pid, syscall.SIGKILL)
+		}
+		_ = killFunc(-pgid, syscall.SIGKILL)
 		return fmt.Errorf("process did not exit gracefully, killed")
 	case err := <-done:
 		return err
