@@ -34,6 +34,99 @@ Or install via Go: `go install github.com/xmazu/openenvx@latest`
 
 ---
 
+## Variable expansion & command substitution
+
+Values in your `.env` are expanded when you run commands or use `openenvx get`. Two forms are supported:
+
+### Variable references: `${VAR}`
+
+Reference other keys in the same env (or from earlier files when using multiple files). Resolved after command substitution.
+
+```bash
+USER=alice
+HOME_DIR=${HOME}
+DB_URL=postgres://${USER}@localhost/mydb
+```
+
+Circular references and undefined variables cause an error.
+
+### Command substitution: `$(command)`
+
+Run a shell command and use its stdout (trimmed) as the value. Commands run with your current process environment (e.g. `PATH`, `HOME`). Resolved first, so you can combine with `${VAR}`.
+
+```bash
+# Inject current user or hostname
+CURRENT_USER=$(whoami)
+HOSTNAME=$(hostname)
+
+# Use in another variable
+GREET=hello-${CURRENT_USER}
+```
+
+Nested parentheses are supported, e.g. `$(echo "$(whoami)")`. Empty `$()` or a failing command returns an error.
+
+---
+
+## Useful commands & tricks
+
+### Multiple env files
+
+Compose env from several files; later files override earlier ones unless you avoid overload:
+
+```bash
+# Default: later files only fill in missing keys (no override)
+openenvx run -f .env -f .env.local -- npm start
+
+# Let later files and --env override earlier values
+openenvx run -f .env -f .env.local --overload -- npm start
+```
+
+Handy for local overrides (e.g. `.env.local`), per-environment files (e.g. `.env.production`), or splitting shared vs. secret keys.
+
+### Override or add vars at run time
+
+```bash
+openenvx run -e NODE_ENV=test -e PORT=3001 -- npm test
+```
+
+Combine with `-f` and `--overload` so `-e` can override file values when needed.
+
+### Get a single value for scripts
+
+```bash
+# Raw value (e.g. for scripts)
+export API_KEY=$(openenvx get API_KEY)
+
+# Shell-friendly (key=value)
+eval "$(openenvx get --format eval)"
+```
+
+### Redact secrets in command output
+
+Useful when an agent or log should see that a secret is present but not its value:
+
+```bash
+openenvx run --redact -- npm start
+```
+
+Output is rewritten so secret values appear as `[REDACTED:KEY]`.
+
+### Strict mode and watching
+
+Fail if any env file is missing or decryption fails (e.g. in CI):
+
+```bash
+openenvx run -f .env -f .env.production --strict -- npm start
+```
+
+Auto-restart when `.env` changes (default for dev-server-like commands); disable with `--no-watch`:
+
+```bash
+openenvx run --no-watch -- python server.py
+```
+
+---
+
 ## Security Architecture
 
 ### Envelope Encryption

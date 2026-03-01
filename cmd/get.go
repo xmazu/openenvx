@@ -69,6 +69,10 @@ func runGet(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
+		decrypted, err = runenv.ExpandMap(decrypted)
+		if err != nil {
+			return err
+		}
 
 		value, ok := decrypted[key]
 		if !ok {
@@ -88,6 +92,10 @@ func runGet(cmd *cobra.Command, args []string) error {
 	}
 
 	decrypted, err := runenv.LoadDecryptedEnv(envFilePath, wsRoot)
+	if err != nil {
+		return err
+	}
+	decrypted, err = runenv.ExpandMap(decrypted)
 	if err != nil {
 		return err
 	}

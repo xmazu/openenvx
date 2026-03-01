@@ -61,6 +61,10 @@ func runRun(cmd *cobra.Command, args []string) error {
 	if err := runenv.MergeOverlayEnv(merged, runEnv, runOverload); err != nil {
 		return err
 	}
+	envMap, err := runenv.ExpandMap(merged)
+	if err != nil {
+		return err
+	}
 
 	command := args[0]
 	var cmdArgs []string
@@ -71,10 +75,10 @@ func runRun(cmd *cobra.Command, args []string) error {
 	shouldWatch := !runNoWatch && runenv.IsDevServerCommand(command)
 
 	if !shouldWatch {
-		return runOnce(merged, command, cmdArgs)
+		return runOnce(envMap, command, cmdArgs)
 	}
 
-	return runWithWatch(merged, files, command, cmdArgs)
+	return runWithWatch(envMap, files, command, cmdArgs)
 }
 
 func resolveEnvFiles() []string {
@@ -175,13 +179,18 @@ func runWithWatch(envMap map[string]string, files []string, command string, args
 				}
 			}
 
-			newEnv, err := runenv.LoadDecryptedEnvFromFiles(files, runOverload, runStrict)
+			newMerged, err := runenv.LoadDecryptedEnvFromFiles(files, runOverload, runStrict)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error reloading .env: %v\n", err)
 				continue
 			}
-			if err := runenv.MergeOverlayEnv(newEnv, runEnv, runOverload); err != nil {
+			if err := runenv.MergeOverlayEnv(newMerged, runEnv, runOverload); err != nil {
 				fmt.Fprintf(os.Stderr, "Error merging overlay: %v\n", err)
+				continue
+			}
+			newEnv, err := runenv.ExpandMap(newMerged)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error expanding variables: %v\n", err)
 				continue
 			}
 

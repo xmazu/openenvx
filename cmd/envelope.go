@@ -120,6 +120,10 @@ func runEnvelopeCreate(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("load .env: %w", err)
 	}
+	secrets, err = runenv.ExpandMap(secrets)
+	if err != nil {
+		return fmt.Errorf("expand variables: %w", err)
+	}
 
 	filtered := make(map[string]string)
 	for _, key := range envelopeScope {

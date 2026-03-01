@@ -160,6 +160,10 @@ func Run(ctx context.Context) error {
 		if err != nil {
 			return errorResult(err.Error()), nil, nil
 		}
+		secrets, err = runenv.ExpandMap(secrets)
+		if err != nil {
+			return errorResult(err.Error()), nil, nil
+		}
 
 		filtered := make(map[string]string)
 		for _, key := range args.Keys {
