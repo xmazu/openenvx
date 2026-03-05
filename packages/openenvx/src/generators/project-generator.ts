@@ -1,22 +1,22 @@
-import fs from "fs-extra";
-import path from "path";
-import { execa } from "execa";
+import path from 'node:path';
+import { execa } from 'execa';
+import fs from 'fs-extra';
 import {
+  addPackageDependency,
+  appendEnvVariables,
   generateBaseTemplate,
   generateFeature,
-  appendEnvVariables,
-  addPackageDependency,
-} from "../lib/templates";
+} from '../lib/templates';
 
 export interface ProjectConfig {
-  name: string;
-  projectName: string;
+  database: string;
   features: {
     stripe: boolean;
     storage: boolean;
     email: boolean;
   };
-  database: string;
+  name: string;
+  projectName: string;
 }
 
 export interface State {
@@ -24,29 +24,32 @@ export interface State {
   generated: string[];
 }
 
-export type LogLevel = "info" | "success" | "warning" | "error" | "spinner";
-export type LogEntry = { message: string; level: LogLevel };
+export type LogLevel = 'info' | 'success' | 'warning' | 'error' | 'spinner';
+export interface LogEntry {
+  level: LogLevel;
+  message: string;
+}
 
-export type PackageManager = "bun" | "pnpm";
+export type PackageManager = 'bun' | 'pnpm';
 
 interface GenerateContext {
   config: ProjectConfig;
-  targetDir: string;
-  state: State;
   packageManager: PackageManager;
+  state: State;
+  targetDir: string;
 }
 
 async function detectPackageManager(): Promise<PackageManager> {
   try {
-    await execa("bun", ["--version"], { stdio: "ignore" });
-    return "bun";
+    await execa('bun', ['--version'], { stdio: 'ignore' });
+    return 'bun';
   } catch {
     try {
-      await execa("pnpm", ["--version"], { stdio: "ignore" });
-      return "pnpm";
+      await execa('pnpm', ['--version'], { stdio: 'ignore' });
+      return 'pnpm';
     } catch {
       throw new Error(
-        "No package manager found. Please install Bun (https://bun.sh) or pnpm (https://pnpm.io).",
+        'No package manager found. Please install Bun (https://bun.sh) or pnpm (https://pnpm.io).'
       );
     }
   }
@@ -54,7 +57,7 @@ async function detectPackageManager(): Promise<PackageManager> {
 
 function createContext(
   config: ProjectConfig,
-  packageManager: PackageManager,
+  packageManager: PackageManager
 ): GenerateContext {
   return {
     config,
@@ -68,100 +71,100 @@ function createContext(
 }
 
 async function* createProjectDirectory(
-  ctx: GenerateContext,
+  ctx: GenerateContext
 ): AsyncGenerator<LogEntry> {
   if (await fs.pathExists(ctx.targetDir)) {
     throw new Error(`Directory "${ctx.config.name}" already exists`);
   }
 
-  yield { message: "Creating project directory...", level: "spinner" };
+  yield { message: 'Creating project directory...', level: 'spinner' };
   await fs.ensureDir(ctx.targetDir);
-  yield { message: "Project directory created", level: "success" };
+  yield { message: 'Project directory created', level: 'success' };
 }
 
 async function* generateBase(ctx: GenerateContext): AsyncGenerator<LogEntry> {
-  yield { message: "Generating base template...", level: "spinner" };
+  yield { message: 'Generating base template...', level: 'spinner' };
   await generateBaseTemplate(ctx.targetDir, ctx.config, ctx.packageManager);
-  ctx.state.generated.push("base");
-  yield { message: "Base template generated", level: "success" };
+  ctx.state.generated.push('base');
+  yield { message: 'Base template generated', level: 'success' };
 }
 
 async function* generateFeatures(
-  ctx: GenerateContext,
+  ctx: GenerateContext
 ): AsyncGenerator<LogEntry> {
   if (ctx.config.features.stripe) {
-    yield { message: "Generating Stripe feature...", level: "spinner" };
-    await generateFeature(ctx.targetDir, "stripe", ctx.config);
-    ctx.state.features.push("stripe");
-    ctx.state.generated.push("stripe");
-    yield { message: "Stripe feature generated", level: "success" };
+    yield { message: 'Generating Stripe feature...', level: 'spinner' };
+    await generateFeature(ctx.targetDir, 'stripe', ctx.config);
+    ctx.state.features.push('stripe');
+    ctx.state.generated.push('stripe');
+    yield { message: 'Stripe feature generated', level: 'success' };
   }
 
   if (ctx.config.features.storage) {
-    yield { message: "Generating Storage feature...", level: "spinner" };
-    await generateFeature(ctx.targetDir, "storage", ctx.config);
-    ctx.state.features.push("storage");
-    ctx.state.generated.push("storage");
-    yield { message: "Storage feature generated", level: "success" };
+    yield { message: 'Generating Storage feature...', level: 'spinner' };
+    await generateFeature(ctx.targetDir, 'storage', ctx.config);
+    ctx.state.features.push('storage');
+    ctx.state.generated.push('storage');
+    yield { message: 'Storage feature generated', level: 'success' };
   }
 
   if (ctx.config.features.email) {
-    yield { message: "Generating Email feature...", level: "spinner" };
-    await generateFeature(ctx.targetDir, "email", ctx.config);
-    ctx.state.features.push("email");
-    ctx.state.generated.push("email");
-    yield { message: "Email feature generated", level: "success" };
+    yield { message: 'Generating Email feature...', level: 'spinner' };
+    await generateFeature(ctx.targetDir, 'email', ctx.config);
+    ctx.state.features.push('email');
+    ctx.state.generated.push('email');
+    yield { message: 'Email feature generated', level: 'success' };
   }
 }
 
 async function* setupEnvironment(
-  ctx: GenerateContext,
+  ctx: GenerateContext
 ): AsyncGenerator<LogEntry> {
-  yield { message: "Appending environment variables...", level: "spinner" };
+  yield { message: 'Appending environment variables...', level: 'spinner' };
   await appendEnvVariables(ctx.targetDir, ctx.config);
 
-  await fs.ensureDir(path.join(ctx.targetDir, ".openenvx"));
+  await fs.ensureDir(path.join(ctx.targetDir, '.openenvx'));
   await fs.writeJson(
-    path.join(ctx.targetDir, ".openenvx", "state.json"),
+    path.join(ctx.targetDir, '.openenvx', 'state.json'),
     ctx.state,
-    { spaces: 2 },
+    { spaces: 2 }
   );
-  yield { message: "Environment configured", level: "success" };
+  yield { message: 'Environment configured', level: 'success' };
 }
 
 async function* addWorkspaceDependencies(
-  ctx: GenerateContext,
+  ctx: GenerateContext
 ): AsyncGenerator<LogEntry> {
   if (ctx.config.features.stripe) {
     yield {
-      message: "Adding Stripe workspace dependency...",
-      level: "spinner",
+      message: 'Adding Stripe workspace dependency...',
+      level: 'spinner',
     };
     await addPackageDependency(
-      path.join(ctx.targetDir, "apps", "dashboard", "package.json"),
+      path.join(ctx.targetDir, 'apps', 'dashboard', 'package.json'),
       `@${ctx.config.projectName}/stripe`,
-      "workspace:*",
+      'workspace:*'
     );
   }
 
   if (ctx.config.features.storage) {
     yield {
-      message: "Adding Storage workspace dependency...",
-      level: "spinner",
+      message: 'Adding Storage workspace dependency...',
+      level: 'spinner',
     };
     await addPackageDependency(
-      path.join(ctx.targetDir, "apps", "dashboard", "package.json"),
+      path.join(ctx.targetDir, 'apps', 'dashboard', 'package.json'),
       `@${ctx.config.projectName}/storage`,
-      "workspace:*",
+      'workspace:*'
     );
   }
 
   if (ctx.config.features.email) {
-    yield { message: "Adding Email workspace dependency...", level: "spinner" };
+    yield { message: 'Adding Email workspace dependency...', level: 'spinner' };
     await addPackageDependency(
-      path.join(ctx.targetDir, "apps", "dashboard", "package.json"),
+      path.join(ctx.targetDir, 'apps', 'dashboard', 'package.json'),
       `@${ctx.config.projectName}/email`,
-      "workspace:*",
+      'workspace:*'
     );
   }
 
@@ -170,78 +173,78 @@ async function* addWorkspaceDependencies(
     ctx.config.features.storage ||
     ctx.config.features.email
   ) {
-    yield { message: "Workspace dependencies added", level: "success" };
+    yield { message: 'Workspace dependencies added', level: 'success' };
   }
 }
 
 async function* installDependencies(
-  ctx: GenerateContext,
+  ctx: GenerateContext
 ): AsyncGenerator<LogEntry> {
   yield {
     message: `Installing dependencies with ${ctx.packageManager}...`,
-    level: "spinner",
+    level: 'spinner',
   };
 
-  const installCmd = ctx.packageManager === "bun" ? "bun" : "pnpm";
-  const installArgs = ctx.packageManager === "bun" ? ["install"] : ["install"];
+  const installCmd = ctx.packageManager === 'bun' ? 'bun' : 'pnpm';
+  const installArgs = ctx.packageManager === 'bun' ? ['install'] : ['install'];
 
   await execa(installCmd, installArgs, {
     cwd: ctx.targetDir,
-    stdout: "inherit",
-    stderr: "inherit",
+    stdout: 'inherit',
+    stderr: 'inherit',
   });
 
-  yield { message: "Dependencies installed", level: "success" };
+  yield { message: 'Dependencies installed', level: 'success' };
 }
 
 async function* initGit(ctx: GenerateContext): AsyncGenerator<LogEntry> {
-  yield { message: "Initializing Git repository...", level: "spinner" };
-  await execa("git", ["init"], { cwd: ctx.targetDir });
-  await execa("git", ["add", "."], { cwd: ctx.targetDir });
+  yield { message: 'Initializing Git repository...', level: 'spinner' };
+  await execa('git', ['init'], { cwd: ctx.targetDir });
+  await execa('git', ['add', '.'], { cwd: ctx.targetDir });
   await execa(
-    "git",
-    ["commit", "-m", "Initial commit from create-openenvx-app"],
+    'git',
+    ['commit', '-m', 'Initial commit from create-openenvx-app'],
     {
       cwd: ctx.targetDir,
-    },
+    }
   );
-  yield { message: "Git repository initialized", level: "success" };
+  yield { message: 'Git repository initialized', level: 'success' };
 }
 
 async function* initShadcn(ctx: GenerateContext): AsyncGenerator<LogEntry> {
-  yield { message: "Adding shadcn/ui components...", level: "spinner" };
+  yield { message: 'Adding shadcn/ui components...', level: 'spinner' };
 
-  const webAppDir = path.join(ctx.targetDir, "apps", "web");
+  const webAppDir = path.join(ctx.targetDir, 'apps', 'web');
 
-  const runCmd = ctx.packageManager === "bun" ? "bunx" : "pnpm";
+  const runCmd = ctx.packageManager === 'bun' ? 'bunx' : 'pnpm';
   const runArgs =
-    ctx.packageManager === "bun"
-      ? ["shadcn@latest", "add", "-y", "button", "card", "input", "label"]
+    ctx.packageManager === 'bun'
+      ? ['shadcn@latest', 'add', '-y', 'button', 'card', 'input', 'label']
       : [
-          "exec",
-          "shadcn@latest",
-          "add",
-          "-y",
-          "button",
-          "card",
-          "input",
-          "label",
+          'exec',
+          'shadcn@latest',
+          'add',
+          '-y',
+          'button',
+          'card',
+          'input',
+          'label',
         ];
 
   await execa(runCmd, runArgs, {
     cwd: webAppDir,
-    stdout: "inherit",
-    stderr: "inherit",
+    stdout: 'inherit',
+    stderr: 'inherit',
   });
 
-  yield { message: "shadcn/ui components added", level: "success" };
+  yield { message: 'shadcn/ui components added', level: 'success' };
 }
 
 export async function* generateProject(
-  config: ProjectConfig,
+  config: ProjectConfig
 ): AsyncGenerator<LogEntry, void, unknown> {
   const packageManager = await detectPackageManager();
-  yield { message: `Using package manager: ${packageManager}`, level: "info" };
+  yield { message: `Using package manager: ${packageManager}`, level: 'info' };
 
   const ctx = createContext(config, packageManager);
 

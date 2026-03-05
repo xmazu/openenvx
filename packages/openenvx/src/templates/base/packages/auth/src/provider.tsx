@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, type ReactNode, useContext } from 'react';
 
 const AuthContext = createContext(null);
 
