@@ -1,0 +1,31 @@
+{
+  "packages": {
+    "packages/openenvx": {
+      "component": "openenvx",
+      "release-type": "node"
+    },
+    "packages/envtyped": {
+      "component": "@openenvx/envtyped",
+      "release-type": "node"
+    },
+    "runtime": {
+      "component": "oexctl",
+      "release-type": "go",
+      "extra-files": ["scripts/install.sh"]
+    },
+    "envx": {
+      "component": "envx",
+      "release-type": "go",
+      "extra-files": ["scripts/install.sh"]
+    }
+  },
+  "separate-pull-requests": false,
+  "group-pull-request-title-pattern": "chore: release ${component}",
+  "plugins": [
+    {
+      "type": "linked-versions",
+      "groupName": "js-packages",
+      "components": ["openenvx", "@openenvx/envtyped"]
+    }
+  ]
+}
