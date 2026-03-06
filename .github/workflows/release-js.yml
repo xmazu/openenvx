@@ -1,4 +1,4 @@
-name: Release
+name: Release JavaScript
 
 on:
   push:
@@ -9,7 +9,7 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
   release:
-    name: Release
+    name: Release to NPM
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -18,11 +18,6 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1

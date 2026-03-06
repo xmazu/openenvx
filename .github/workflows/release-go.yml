@@ -1,0 +1,71 @@
+name: Release Go
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    name: Build Binaries
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: envx
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Get version
+        id: vars
+        run: |
+          echo "version=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          echo "build_time=$(date -u '+%Y-%m-%d_%H:%M:%S')" >> "$GITHUB_OUTPUT"
+
+      - name: Build binaries
+        env:
+          VERSION: ${{ steps.vars.outputs.version }}
+          BUILD_TIME: ${{ steps.vars.outputs.build_time }}
+        run: |
+          mkdir -p dist
+          GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.Version=$VERSION -X main.BuildTime=$BUILD_TIME" -o dist/envx-darwin-amd64 .
+          GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.Version=$VERSION -X main.BuildTime=$BUILD_TIME" -o dist/envx-darwin-arm64 .
+          GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=$VERSION -X main.BuildTime=$BUILD_TIME" -o dist/envx-linux-amd64 .
+          GOOS=linux GOARCH=arm64 go build -ldflags "-X main.Version=$VERSION -X main.BuildTime=$BUILD_TIME" -o dist/envx-linux-arm64 .
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries
+          path: envx/dist/
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: binaries
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            envx-darwin-amd64
+            envx-darwin-arm64
+            envx-linux-amd64
+            envx-linux-arm64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

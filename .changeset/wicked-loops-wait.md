@@ -1,5 +1,5 @@
 ---
-"openenvx": major
+"openenvx": minor
 ---
 
 Initialize openenvx starter
