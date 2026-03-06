@@ -3,6 +3,16 @@
   "version": "0.0.1",
   "description": "OpenEnvx CLI - Create and manage OpenEnvx SaaS apps",
   "license": "MIT",
+  "author": "xmazu",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xmazu/openenvx.git",
+    "directory": "packages/openenvx"
+  },
+  "bugs": {
+    "url": "https://github.com/xmazu/openenvx/issues"
+  },
+  "homepage": "https://github.com/xmazu/openenvx#readme",
   "type": "module",
   "bin": {
     "openenvx": "./bin/openenvx"
@@ -15,6 +25,9 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "@clack/prompts": "^1.1.0",
