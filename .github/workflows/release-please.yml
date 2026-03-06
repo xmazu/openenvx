@@ -1,0 +1,108 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+      openenvx--release_created: ${{ steps.release.outputs['packages/openenvx--release_created'] }}
+      envtyped--release_created: ${{ steps.release.outputs['packages/envtyped--release_created'] }}
+      oexctl--release_created: ${{ steps.release.outputs['runtime--release_created'] }}
+      envx--release_created: ${{ steps.release.outputs['envx--release_created'] }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  publish-js-packages:
+    needs: release-please
+    runs-on: ubuntu-latest
+    if: ${{ needs.release-please.outputs.openenvx--release_created == 'true' || needs.release-please.outputs.envtyped--release_created == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      - run: bun install
+      - run: bun run build
+      - run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+      - run: cd packages/openenvx && npm publish --access public
+        if: ${{ needs.release-please.outputs.openenvx--release_created == 'true' }}
+      - run: cd packages/envtyped && npm publish --access public
+        if: ${{ needs.release-please.outputs.envtyped--release_created == 'true' }}
+
+  build-go-binaries:
+    needs: release-please
+    runs-on: ubuntu-latest
+    if: ${{ needs.release-please.outputs.oexctl--release_created == 'true' || needs.release-please.outputs.envx--release_created == 'true' }}
+    strategy:
+      matrix:
+        include:
+          - os: darwin
+            arch: amd64
+          - os: darwin
+            arch: arm64
+          - os: linux
+            arch: amd64
+          - os: linux
+            arch: arm64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Build oexctl
+        if: ${{ needs.release-please.outputs.oexctl--release_created == 'true' }}
+        run: |
+          cd runtime
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -ldflags "-X main.Version=${{ needs.release-please.outputs['runtime--version'] }}" -o ../dist/oexctl-${{ matrix.os }}-${{ matrix.arch }} .
+
+      - name: Build envx
+        if: ${{ needs.release-please.outputs.envx--release_created == 'true' }}
+        run: |
+          cd envx
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -ldflags "-X main.Version=${{ needs.release-please.outputs['envx--version'] }}" -o ../dist/envx-${{ matrix.os }}-${{ matrix.arch }} .
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{ matrix.os }}-${{ matrix.arch }}
+          path: dist/*
+
+  upload-go-release-assets:
+    needs: [release-please, build-go-binaries]
+    runs-on: ubuntu-latest
+    if: ${{ needs.release-please.outputs.oexctl--release_created == 'true' || needs.release-please.outputs.envx--release_created == 'true' }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: binaries-*
+          merge-multiple: true
+
+      - name: Upload oexctl assets
+        if: ${{ needs.release-please.outputs.oexctl--release_created == 'true' }}
+        run: |
+          gh release upload oexctl-v${{ needs.release-please.outputs['runtime--version'] }} dist/oexctl-* --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload envx assets
+        if: ${{ needs.release-please.outputs.envx--release_created == 'true' }}
+        run: |
+          gh release upload envx-v${{ needs.release-please.outputs['envx--version'] }} dist/envx-* --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

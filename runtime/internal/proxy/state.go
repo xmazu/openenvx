@@ -14,7 +14,7 @@ import (
 
 const (
 	DefaultPort = 1355
-	StateDir    = "openenvx"
+	StateDir    = "oexctl"
 
 	lockStaleDuration = 10 * time.Second
 	lockRetryCount    = 20
@@ -43,7 +43,7 @@ type State struct {
 	routes map[string]Route
 }
 
-// StateDirPath returns ~/.config/openenvx/
+// StateDirPath returns ~/.config/oexctl/
 func StateDirPath(proxyPort int) (string, error) {
 	dir := os.Getenv("XDG_CONFIG_HOME")
 	if dir == "" {

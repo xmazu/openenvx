@@ -38,8 +38,28 @@ OpenEnvX is a local-first development runtime for micro-SaaS builders focused on
   ├── openenvx/         # Project generator CLI (create-openenvx-app)
   └── envtyped/         # Typed env validation library (@openenvx/envtyped)
 /envx/                  # Go CLI for secure env management
-/runtime/               # Go runtime proxy component
+/runtime/               # oexctl - Go control plane CLI for local dev proxy
 ```
+
+## oexctl - Control Plane CLI
+
+The `oexctl` CLI provides local development proxying with automatic TLS and subdomain routing.
+
+```bash
+# Install (via openenvx init or curl)
+openenvx init  # Installs oexctl binary
+
+# Run an app with proxy
+oexctl proxy run myapp -- npm run dev
+
+# Access at https://myapp.localhost:1355
+```
+
+**Features:**
+- Automatic TLS certificate generation
+- Subdomain-based routing (*.localhost:1355)
+- No DNS configuration needed
+- Route management for multiple apps
 
 ## Conventions
 

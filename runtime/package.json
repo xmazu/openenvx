@@ -1,0 +1,28 @@
+{
+  "name": "@openenvx/oexctl",
+  "version": "0.1.0",
+  "description": "OpenEnvX control plane CLI - local development proxy",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "go build -o oexctl .",
+    "test": "go test ./..."
+  },
+  "files": [],
+  "keywords": [
+    "openenvx",
+    "proxy",
+    "localhost",
+    "development",
+    "cli"
+  ],
+  "author": "OpenEnvX",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xmazu/openenvx.git",
+    "directory": "runtime"
+  }
+}

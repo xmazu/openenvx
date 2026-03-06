@@ -100,7 +100,8 @@ ${Object.entries(dependencyCatalog)
 export async function generateBaseTemplate(
   targetDir: string,
   config: ProjectConfig,
-  packageManager: PackageManager
+  packageManager: PackageManager,
+  hasOexctl: boolean
 ): Promise<void> {
   const templatesDir = getTemplatesDir('base');
 
@@ -161,6 +162,17 @@ export async function generateBaseTemplate(
     await fs.ensureDir(path.dirname(targetFilePath));
     await fs.copy(sourcePath, targetFilePath);
   }
+
+  // Make shell scripts executable
+  const scriptsDir = path.join(targetDir, 'scripts');
+  if (await fs.pathExists(scriptsDir)) {
+    const scriptFiles = await fs.readdir(scriptsDir);
+    for (const scriptFile of scriptFiles) {
+      if (scriptFile.endsWith('.sh')) {
+        await fs.chmod(path.join(scriptsDir, scriptFile), 0o755);
+      }
+    }
+  }
 }
 
 export async function generateFeature(
@@ -215,7 +227,8 @@ export async function generateFeature(
 
 export async function appendEnvVariables(
   targetDir: string,
-  config: ProjectConfig
+  config: ProjectConfig,
+  hasOexctl: boolean
 ): Promise<void> {
   const envTemplatePath = getTemplatesDir(path.join('features', 'env.hbs'));
 
@@ -225,7 +238,11 @@ export async function appendEnvVariables(
 
   const templateContent = await fs.readFile(envTemplatePath, 'utf-8');
   const template = Handlebars.compile(templateContent);
-  const rendered = template(config);
+  const templateContext = {
+    ...config,
+    hasOexctl,
+  };
+  const rendered = template(templateContext);
 
   // Append to both apps' .env files (create if missing, e.g. when base template
   // doesn't include .env or structure changes)
