@@ -1,15 +1,15 @@
-# envtyped
+# @openenvx/envtyped
 
 A typed environment variable parser using [Zod](https://zod.dev/) with support for defaults, transforms, and validation.
 
 ## Installation
 
 ```bash
-bun add envtyped zod
+bun add @openenvx/envtyped zod
 # or
-npm install envtyped zod
+npm install @openenvx/envtyped zod
 # or
-yarn add envtyped zod
+yarn add @openenvx/envtyped zod
 ```
 
 ## Usage
@@ -17,7 +17,7 @@ yarn add envtyped zod
 ### Basic Usage
 
 ```typescript
-import { createEnv, z } from "envtyped";
+import { createEnv, z } from "@openenvx/envtyped";
 
 const env = createEnv({
   PORT: z.string().default("3000"),
@@ -78,7 +78,7 @@ const env = createEnv({
 Parses string `'true'` or `'false'` to actual boolean:
 
 ```typescript
-import { booleanString } from "envtyped";
+import { booleanString } from "@openenvx/envtyped";
 
 const env = createEnv({
   DEBUG: booleanString().default("false"),
@@ -94,7 +94,7 @@ const env = createEnv({
 Parses string numbers to actual numbers:
 
 ```typescript
-import { numberString } from "envtyped";
+import { numberString } from "@openenvx/envtyped";
 
 const env = createEnv({
   PORT: numberString().default("3000"),
@@ -110,7 +110,7 @@ const env = createEnv({
 When validation fails, an `EnvValidationError` is thrown with detailed information:
 
 ```typescript
-import { createEnv, EnvValidationError, z } from "envtyped";
+import { createEnv, EnvValidationError, z } from "@openenvx/envtyped";
 
 try {
   const env = createEnv({
@@ -131,10 +131,10 @@ try {
 
 ## TypeScript
 
-`envtyped` provides full type inference:
+`@openenvx/envtyped` provides full type inference:
 
 ```typescript
-import { createEnv, z } from "envtyped";
+import { createEnv, z } from "@openenvx/envtyped";
 
 const env = createEnv({
   PORT: z.number().default(3000),

@@ -29,7 +29,7 @@ jobs:
         run: go build -v ./...
 
   test-js:
-    name: Test JavaScript
+    name: Test @openenvx/envtyped
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
