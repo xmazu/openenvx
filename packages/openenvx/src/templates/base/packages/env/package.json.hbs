@@ -1,0 +1,19 @@
+{
+  "name": "@{{projectName}}/env",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@openenvx/envtyped": "^0.1.0",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@{{projectName}}/typescript-config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

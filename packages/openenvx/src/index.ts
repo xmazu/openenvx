@@ -92,7 +92,6 @@ program
       }
 
       const nextSteps = `cd ${config.name}
-cp .env.example .env.local
 bun dev`;
 
       note(nextSteps, 'Next steps');
