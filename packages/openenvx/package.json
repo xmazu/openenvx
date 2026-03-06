@@ -1,6 +1,6 @@
 {
   "name": "openenvx",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "OpenEnvx CLI - Create and manage OpenEnvx SaaS apps",
   "license": "MIT",
   "author": "xmazu",
@@ -24,7 +24,8 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "bun run build"
   },
   "publishConfig": {
     "access": "public"

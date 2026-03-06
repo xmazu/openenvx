@@ -38,8 +38,6 @@ jobs:
 
   test:
     name: Test
-    needs: check-changesets
-    if: needs.check-changesets.outputs.has-changesets == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -68,13 +66,13 @@ jobs:
 
   release:
     name: Release to NPM
-    needs: [check-changesets, test]
-    if: needs.check-changesets.outputs.has-changesets == 'true'
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
       id-token: write
+      packages: write
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -84,17 +82,29 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Setup Node.js for npm publish
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: "https://registry.npmjs.org"
+
       - name: Install Dependencies
         run: bun install
 
       - name: Build Packages
         run: bun run build
 
+      - name: Configure npm authentication
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Create Release Pull Request or Publish to npm
         id: changesets
         uses: changesets/action@v1
         with:
-          publish: bun changeset publish
+          publish: npm run publish-packages
           title: "chore: version packages"
           commit: "chore: version packages"
         env:
