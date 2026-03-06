@@ -1,5 +1,0 @@
----
-"openenvx": minor
----
-
-Initialize openenvx
