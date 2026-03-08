@@ -1,6 +1,6 @@
 {
-  "packages/openenvx": "0.2.0",
+  "packages/openenvx": "0.3.0",
   "packages/envtyped": "0.2.0",
-  "runtime": "0.2.0",
+  "runtime": "0.3.0",
   "envx": "0.2.0"
 }
