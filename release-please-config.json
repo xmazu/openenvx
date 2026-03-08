@@ -2,25 +2,35 @@
   "packages": {
     "packages/openenvx": {
       "component": "openenvx",
-      "release-type": "node"
+      "release-type": "node",
+      "versioning": "always-bump-minor",
+      "bump-minor-pre-major": true
     },
     "packages/envtyped": {
       "component": "@openenvx/envtyped",
-      "release-type": "node"
+      "release-type": "node",
+      "versioning": "always-bump-minor",
+      "bump-minor-pre-major": true
     },
     "runtime": {
       "component": "oexctl",
       "release-type": "go",
+      "versioning": "always-bump-minor",
+      "bump-minor-pre-major": true,
       "extra-files": ["scripts/install.sh"]
     },
     "envx": {
       "component": "envx",
       "release-type": "go",
+      "versioning": "always-bump-minor",
+      "bump-minor-pre-major": true,
       "extra-files": ["scripts/install.sh"]
     }
   },
   "separate-pull-requests": false,
   "group-pull-request-title-pattern": "chore: release ${component}",
+  "versioning": "always-bump-minor",
+  "bump-minor-pre-major": true,
   "plugins": [
     {
       "type": "linked-versions",
