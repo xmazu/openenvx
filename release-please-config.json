@@ -1,31 +1,36 @@
 {
+  "bootstrap-sha": "31f2555187f38cfe37713b78cbc1c01c98c43147",
   "packages": {
     "packages/openenvx": {
       "component": "openenvx",
-      "release-type": "node"
+      "release-type": "node",
+      "include-component-in-tag": false
     },
     "packages/envtyped": {
       "component": "@openenvx/envtyped",
-      "release-type": "node"
+      "release-type": "node",
+      "include-component-in-tag": false
     },
     "runtime": {
       "component": "oexctl",
       "release-type": "go",
-      "extra-files": ["scripts/install.sh"]
+      "extra-files": ["scripts/install.sh"],
+      "include-component-in-tag": false
     },
     "envx": {
       "component": "envx",
       "release-type": "go",
-      "extra-files": ["scripts/install.sh"]
+      "extra-files": ["scripts/install.sh"],
+      "include-component-in-tag": false
     }
   },
   "separate-pull-requests": false,
-  "group-pull-request-title-pattern": "chore: release ${component}",
+  "group-pull-request-title-pattern": "chore: release",
   "plugins": [
     {
       "type": "linked-versions",
-      "groupName": "js-packages",
-      "components": ["openenvx", "@openenvx/envtyped"]
+      "groupName": "all-packages",
+      "components": ["openenvx", "@openenvx/envtyped", "oexctl", "envx"]
     }
   ]
 }

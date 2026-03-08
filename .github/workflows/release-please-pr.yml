@@ -1,7 +1,6 @@
-name: Release Please - Prepare Release
+name: Release Please - Create PR
 
 on:
-  # Manual trigger only - YOU decide when to prepare release
   workflow_dispatch:
 
 permissions:
@@ -18,6 +17,3 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
-          # Only create PR, don't do releases automatically
-          skip-github-release: true
-          skip-github-pull-request: false

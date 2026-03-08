@@ -1,48 +1,32 @@
-name: Release Please - Publish Release
+name: Release Please - Publish
 
 on:
-  # Manual trigger - YOU control when to release
-  workflow_dispatch:
-    inputs:
-      package:
-        description: 'Package to release (or "all" for all)'
-        required: true
-        default: 'all'
-        type: choice
-        options:
-          - all
-          - openenvx
-          - envtyped
-          - oexctl
-          - envx
+  push:
+    branches:
+      - main
 
 permissions:
   contents: write
-  packages: write
+  pull-requests: write
 
 jobs:
-  # Get the versions from manifest
-  get-versions:
+  release-please:
     runs-on: ubuntu-latest
     outputs:
-      openenvx_version: ${{ steps.versions.outputs.openenvx }}
-      envtyped_version: ${{ steps.versions.outputs.envtyped }}
-      oexctl_version: ${{ steps.versions.outputs.oexctl }}
-      envx_version: ${{ steps.versions.outputs.envx }}
+      releases_created: ${{ steps.release.outputs.releases_created }}
+      version: ${{ steps.release.outputs['packages/openenvx--version'] }}
     steps:
-      - uses: actions/checkout@v4
-      - id: versions
-        run: |
-          echo "openenvx=$(jq -r '.openenvx' .release-please-manifest.json)" >> "$GITHUB_OUTPUT"
-          echo "envtyped=$(jq -r '."@openenvx/envtyped"' .release-please-manifest.json)" >> "$GITHUB_OUTPUT"
-          echo "oexctl=$(jq -r '.oexctl' .release-please-manifest.json)" >> "$GITHUB_OUTPUT"
-          echo "envx=$(jq -r '.envx' .release-please-manifest.json)" >> "$GITHUB_OUTPUT"
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
 
-  # Publish JS packages to npm
-  publish-js:
-    needs: get-versions
+  publish-js-packages:
+    needs: release-please
     runs-on: ubuntu-latest
-    if: github.event.inputs.package == 'all' || github.event.inputs.package == 'openenvx' || github.event.inputs.package == 'envtyped'
+    if: ${{ needs.release-please.outputs.releases_created == 'true' }}
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v1
@@ -51,20 +35,13 @@ jobs:
       - run: bun install
       - run: bun run build
       - run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-      
-      - name: Publish openenvx
-        if: github.event.inputs.package == 'all' || github.event.inputs.package == 'openenvx'
-        run: cd packages/openenvx && npm publish --access public
-      
-      - name: Publish envtyped
-        if: github.event.inputs.package == 'all' || github.event.inputs.package == 'envtyped'
-        run: cd packages/envtyped && npm publish --access public
+      - run: cd packages/openenvx && npm publish --access public
+      - run: cd packages/envtyped && npm publish --access public
 
-  # Build Go binaries
-  build-go:
-    needs: get-versions
+  build-go-binaries:
+    needs: release-please
     runs-on: ubuntu-latest
-    if: github.event.inputs.package == 'all' || github.event.inputs.package == 'oexctl' || github.event.inputs.package == 'envx'
+    if: ${{ needs.release-please.outputs.releases_created == 'true' }}
     strategy:
       matrix:
         include:
@@ -83,53 +60,40 @@ jobs:
           go-version: "1.24"
 
       - name: Build oexctl
-        if: github.event.inputs.package == 'all' || github.event.inputs.package == 'oexctl'
         run: |
           cd runtime
-          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -ldflags "-X main.Version=${{ needs.get-versions.outputs.oexctl_version }}" -o ../dist/oexctl-${{ matrix.os }}-${{ matrix.arch }} .
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -ldflags "-X main.Version=${{ needs.release-please.outputs.version }}" -o ../dist/oexctl-${{ matrix.os }}-${{ matrix.arch }} .
 
       - name: Build envx
-        if: github.event.inputs.package == 'all' || github.event.inputs.package == 'envx'
         run: |
           cd envx
-          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -ldflags "-X main.Version=${{ needs.get-versions.outputs.envx_version }}" -o ../dist/envx-${{ matrix.os }}-${{ matrix.arch }} .
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -ldflags "-X main.Version=${{ needs.release-please.outputs.version }}" -o ../dist/envx-${{ matrix.os }}-${{ matrix.arch }} .
 
-      - name: Upload binaries
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: go-binaries-${{ matrix.os }}-${{ matrix.arch }}
+          name: binaries-${{ matrix.os }}-${{ matrix.arch }}
           path: dist/*
 
-  # Create GitHub releases
-  create-releases:
-    needs: [get-versions, build-go]
+  upload-go-release-assets:
+    needs: [release-please, build-go-binaries]
     runs-on: ubuntu-latest
-    if: github.event.inputs.package == 'all' || github.event.inputs.package == 'oexctl' || github.event.inputs.package == 'envx'
+    if: ${{ needs.release-please.outputs.releases_created == 'true' }}
     steps:
       - uses: actions/download-artifact@v4
         with:
           path: dist
-          pattern: go-binaries-*
+          pattern: binaries-*
           merge-multiple: true
 
-      - name: Create oexctl release
-        if: github.event.inputs.package == 'all' || github.event.inputs.package == 'oexctl'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: oexctl-v${{ needs.get-versions.outputs.oexctl_version }}
-          name: oexctl v${{ needs.get-versions.outputs.oexctl_version }}
-          generate_release_notes: true
-          files: dist/oexctl-*
+      - name: Upload oexctl assets
+        run: |
+          gh release upload oexctl-v${{ needs.release-please.outputs.version }} dist/oexctl-* --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create envx release
-        if: github.event.inputs.package == 'all' || github.event.inputs.package == 'envx'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: envx-v${{ needs.get-versions.outputs.envx_version }}
-          name: envx v${{ needs.get-versions.outputs.envx_version }}
-          generate_release_notes: true
-          files: dist/envx-*
+      - name: Upload envx assets
+        run: |
+          gh release upload envx-v${{ needs.release-please.outputs.version }} dist/envx-* --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
