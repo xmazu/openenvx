@@ -16,7 +16,6 @@ const dependencyCatalog = {
   '@types/react-dom': '^19.2.3',
   '@types/node': '^25.3.3',
   tailwindcss: '^4.2.1',
-  'tailwindcss-animate': '^1.0.7',
   postcss: '^8.5.8',
   autoprefixer: '^10.4.27',
   'drizzle-orm': '^0.45.1',
@@ -161,6 +160,17 @@ export async function generateBaseTemplate(
     await fs.ensureDir(path.dirname(targetFilePath));
     await fs.copy(sourcePath, targetFilePath);
   }
+
+  // Make shell scripts executable
+  const scriptsDir = path.join(targetDir, 'scripts');
+  if (await fs.pathExists(scriptsDir)) {
+    const scriptFiles = await fs.readdir(scriptsDir);
+    for (const scriptFile of scriptFiles) {
+      if (scriptFile.endsWith('.sh')) {
+        await fs.chmod(path.join(scriptsDir, scriptFile), 0o755);
+      }
+    }
+  }
 }
 
 export async function generateFeature(
@@ -215,7 +225,8 @@ export async function generateFeature(
 
 export async function appendEnvVariables(
   targetDir: string,
-  config: ProjectConfig
+  config: ProjectConfig,
+  hasOexctl: boolean
 ): Promise<void> {
   const envTemplatePath = getTemplatesDir(path.join('features', 'env.hbs'));
 
@@ -225,7 +236,11 @@ export async function appendEnvVariables(
 
   const templateContent = await fs.readFile(envTemplatePath, 'utf-8');
   const template = Handlebars.compile(templateContent);
-  const rendered = template(config);
+  const templateContext = {
+    ...config,
+    hasOexctl,
+  };
+  const rendered = template(templateContext);
 
   // Append to both apps' .env files (create if missing, e.g. when base template
   // doesn't include .env or structure changes)

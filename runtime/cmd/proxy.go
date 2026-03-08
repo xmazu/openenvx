@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/xmazu/openenvx/internal/proxy"
+	"github.com/xmazu/oexctl/internal/proxy"
 )
 
 const proxyPort = proxy.DefaultPort
@@ -83,7 +83,7 @@ func runProxyRun(cmd *cobra.Command, args []string) error {
 		beforeDash = append(beforeDash, a)
 	}
 	if dashIdx < 0 {
-		return fmt.Errorf("-- required to separate name from command (use: openenvx proxy run myapp -- npm run start)")
+		return fmt.Errorf("-- required to separate name from command (use: oexctl proxy run myapp -- npm run start)")
 	}
 	// beforeDash: [name] or [name, --force] or [--force, name]
 	for _, a := range beforeDash {
@@ -94,10 +94,10 @@ func runProxyRun(cmd *cobra.Command, args []string) error {
 		}
 	}
 	if name == "" {
-		return fmt.Errorf("name required before -- (use: openenvx proxy run myapp -- npm run start)")
+		return fmt.Errorf("name required before -- (use: oexctl proxy run myapp -- npm run start)")
 	}
 	if len(command) == 0 {
-		return fmt.Errorf("command required after -- (use: openenvx proxy run myapp -- npm run start)")
+		return fmt.Errorf("command required after -- (use: oexctl proxy run myapp -- npm run start)")
 	}
 
 	// Ensure proxy is running on 1355 (don't kill - port in use = assume our proxy)

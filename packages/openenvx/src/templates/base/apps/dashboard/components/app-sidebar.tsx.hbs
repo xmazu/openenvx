@@ -1,0 +1,96 @@
+'use client';
+
+import { Home, PanelLeftClose, Settings } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from '@{{projectName}}/ui/components/sidebar';
+
+import { NavGroup } from './nav-group';
+import { NavUser } from './nav-user';
+
+const SidebarCollapseButton = () => {
+  const { toggleSidebar, state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
+
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          className="cursor-pointer"
+          onClick={toggleSidebar}
+          tooltip={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <PanelLeftClose
+            className={`size-4 transition-transform ${isCollapsed ? 'rotate-180' : ''}`}
+          />
+          <span>{isCollapsed ? 'Expand' : 'Collapse'}</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  );
+};
+
+export function AppSidebar() {
+  const pathname = usePathname();
+
+  const navGroups = {
+    main: [
+      {
+        title: 'Dashboard',
+        url: '/',
+        icon: Home,
+        isActive: pathname === '/',
+      },
+    ],
+    settings: [
+      {
+        title: 'Settings',
+        url: '/settings',
+        icon: Settings,
+        isActive: pathname.startsWith('/settings'),
+      },
+    ],
+  };
+
+  return (
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="py-6">
+        <SidebarMenu>
+          <SidebarMenuItem className="flex items-center gap-2">
+            <SidebarMenuButton
+              asChild
+              className="hover:bg-transparent! active:bg-transparent! data-[slot=sidebar-menu-button]:p-1.5!"
+            >
+              <Link className="flex items-center gap-2" href="/">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary font-bold text-lg text-primary-foreground">
+                  E
+                </div>
+                <span className="mt-2 font-semibold text-base group-data-[state=collapsed]:hidden">
+                  {'{{projectName}}'}
+                </span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+      <SidebarContent>
+        <NavGroup items={navGroups.main} label="Main" />
+        <NavGroup items={navGroups.settings} label="Settings" />
+      </SidebarContent>
+      <SidebarFooter>
+        <SidebarCollapseButton />
+        <NavUser />
+      </SidebarFooter>
+    </Sidebar>
+  );
+}

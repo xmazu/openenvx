@@ -3,29 +3,33 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack --port 3001",
+    "dev": "../../scripts/dev-dashboard.sh",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "catalog:",
-    "react": "catalog:",
-    "react-dom": "catalog:",
-    "@{{projectName}}/ui": "workspace:*",
-    "@{{projectName}}/db": "workspace:*",
+    "@hookform/resolvers": "^3.10.0",
     "@{{projectName}}/auth": "workspace:*",
-    "better-auth": "catalog:"
+    "@{{projectName}}/db": "workspace:*",
+    "@{{projectName}}/env": "workspace:*",
+    "@{{projectName}}/ui": "workspace:*",
+    "better-auth": "^1.4.0",
+    "lucide-react": "^0.575.0",
+    "next": "16.1.6",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-hook-form": "^7.54.0",
+    "zod": "^3.24.0"
   },
   "devDependencies": {
-    "@types/node": "catalog:",
-    "@types/react": "catalog:",
-    "@types/react-dom": "catalog:",
-    "@tailwindcss/postcss": "catalog:",
-    "typescript": "catalog:",
-    "tailwindcss": "catalog:",
-    "tailwindcss-animate": "catalog:",
-    "postcss": "catalog:",
-    "autoprefixer": "catalog:"
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@tailwindcss/postcss": "^4",
+    "typescript": "^5",
+    "tailwindcss": "^4",
+    "postcss": "^8",
+    "autoprefixer": "^10"
   }
 }

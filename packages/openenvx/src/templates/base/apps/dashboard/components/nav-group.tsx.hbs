@@ -1,0 +1,68 @@
+'use client';
+
+import type { LucideIcon } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+import {
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from '@{{projectName}}/ui/components/sidebar';
+
+const checkIsActive = (href: string, item: { url: string; exact?: boolean }) =>
+  href === item.url || href.split('?')[0] === item.url;
+
+interface Props {
+  items: {
+    title: string;
+    url: string;
+    icon?: LucideIcon;
+    isActive?: boolean;
+    disabled?: boolean;
+  }[];
+  label: string;
+}
+
+export function NavGroup({ label, items }: Props) {
+  const pathname = usePathname();
+
+  return (
+    <SidebarGroup>
+      <SidebarGroupLabel>{label}</SidebarGroupLabel>
+      <SidebarGroupContent className="flex flex-col gap-2">
+        <SidebarMenu>
+          {items.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton
+                asChild
+                className={
+                  item.disabled ? 'cursor-not-allowed opacity-50' : undefined
+                }
+                isActive={
+                  !item.disabled &&
+                  (item.isActive || checkIsActive(pathname, item))
+                }
+                tooltip={item.title}
+              >
+                <Link
+                  aria-disabled={item.disabled}
+                  href={item.url}
+                  onClick={
+                    item.disabled ? (e) => e.preventDefault() : undefined
+                  }
+                >
+                  {item.icon && <item.icon className="h-4 w-4" />}
+                  <span>{item.title}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}

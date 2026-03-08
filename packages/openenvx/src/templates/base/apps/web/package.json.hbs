@@ -3,22 +3,23 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "../../scripts/dev-web.sh",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "catalog:",
-    "react": "catalog:",
-    "react-dom": "catalog:",
-    "@{{projectName}}/ui": "workspace:*"
+    "@{{projectName}}/env": "workspace:*",
+    "@{{projectName}}/ui": "workspace:*",
+    "next": "16.1.6",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
   },
   "devDependencies": {
-    "@types/node": "catalog:",
-    "@types/react": "catalog:",
-    "@types/react-dom": "catalog:",
-    "@tailwindcss/postcss": "catalog:",
-    "typescript": "catalog:"
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@tailwindcss/postcss": "^4",
+    "typescript": "^5"
   }
 }

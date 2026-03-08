@@ -1,0 +1,28 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+
+import { useSidebar } from '@{{projectName}}/ui/components/sidebar';
+
+export function DashboardSidebarProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [mounted, setMounted] = useState(false);
+  const { isMobile, setOpen } = useSidebar();
+
+  useEffect(() => {
+    setMounted(true);
+    // Collapse sidebar on mobile by default
+    if (isMobile) {
+      setOpen(false);
+    }
+  }, [isMobile, setOpen]);
+
+  if (!mounted) {
+    return <div className="flex min-h-svh w-full" />;
+  }
+
+  return <>{children}</>;
+}

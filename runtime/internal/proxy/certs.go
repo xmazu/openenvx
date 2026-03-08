@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	caValidityYears = 10
+	caValidityYears  = 10
 	certValidityDays = 365
 )
 
@@ -257,7 +257,7 @@ func TrustCA(stateDir string) error {
 			return fmt.Errorf("add trusted cert (may need sudo): %w", err)
 		}
 	case "linux":
-		dest := "/usr/local/share/ca-certificates/openenvx-ca.crt"
+		dest := "/usr/local/share/ca-certificates/oexctl-ca.crt"
 		data, err := os.ReadFile(caPath)
 		if err != nil {
 			return err

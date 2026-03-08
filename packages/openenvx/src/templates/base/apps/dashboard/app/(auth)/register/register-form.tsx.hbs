@@ -1,0 +1,253 @@
+'use client';
+
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Check, Loader2, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@{{projectName}}/ui/components/alert';
+import { Button } from '@{{projectName}}/ui/components/button';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@{{projectName}}/ui/components/form';
+import { Input } from '@{{projectName}}/ui/components/input';
+
+import { authClient } from '@/lib/auth-client';
+
+const formSchema = z
+  .object({
+    name: z.string().min(2, { message: 'Name must be at least 2 characters' }),
+    email: z.string().email({ message: 'Please enter a valid email address' }),
+    password: z
+      .string()
+      .min(8, { message: 'Password must be at least 8 characters' })
+      .regex(/[A-Z]/, {
+        message: 'Password must contain at least one uppercase letter',
+      })
+      .regex(/[a-z]/, {
+        message: 'Password must contain at least one lowercase letter',
+      })
+      .regex(/[0-9]/, { message: 'Password must contain at least one number' }),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
+
+function PasswordStrength({ password }: { password: string }) {
+  const checks = [
+    { label: 'At least 8 characters', met: password.length >= 8 },
+    { label: 'Contains uppercase letter', met: /[A-Z]/.test(password) },
+    { label: 'Contains lowercase letter', met: /[a-z]/.test(password) },
+    { label: 'Contains number', met: /[0-9]/.test(password) },
+  ];
+
+  const strength = checks.filter((c) => c.met).length;
+  const strengthColor =
+    strength === 4
+      ? 'bg-green-500'
+      : strength >= 2
+        ? 'bg-yellow-500'
+        : 'bg-red-500';
+
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-1">
+        {[1, 2, 3, 4].map((i) => (
+          <div
+            className={`h-1 flex-1 rounded-full transition-colors ${
+              i <= strength ? strengthColor : 'bg-muted'
+            }`}
+            key={i}
+          />
+        ))}
+      </div>
+      <ul className="space-y-1">
+        {checks.map((check) => (
+          <li className="flex items-center gap-2 text-xs" key={check.label}>
+            {check.met ? (
+              <Check className="h-3 w-3 text-green-500" />
+            ) : (
+              <X className="h-3 w-3 text-muted-foreground" />
+            )}
+            <span
+              className={check.met ? 'text-green-600' : 'text-muted-foreground'}
+            >
+              {check.label}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export function RegisterForm() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+    },
+  });
+
+  const password = form.watch('password');
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const { data, error: signUpError } = await authClient.signUp.email({
+        email: values.email,
+        password: values.password,
+        name: values.name,
+      });
+
+      if (signUpError) {
+        setError(signUpError.message || 'Failed to create account');
+        return;
+      }
+
+      if (data) {
+        setIsSuccess(true);
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  if (isSuccess) {
+    return (
+      <Alert>
+        <AlertTitle>Account created!</AlertTitle>
+        <AlertDescription>
+          Please check your email to verify your account. Once verified, you can{' '}
+          <button
+            className="text-primary underline"
+            onClick={() => router.push('/login')}
+          >
+            sign in
+          </button>
+          .
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  return (
+    <Form {...form}>
+      <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+        {error && (
+          <div className="rounded-md bg-destructive/10 p-3 text-destructive text-sm">
+            {error}
+          </div>
+        )}
+
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input disabled={isLoading} placeholder="John Doe" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input
+                  disabled={isLoading}
+                  placeholder="you@example.com"
+                  type="email"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input
+                  disabled={isLoading}
+                  placeholder="Create a password"
+                  type="password"
+                  {...field}
+                />
+              </FormControl>
+              {password && <PasswordStrength password={password} />}
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="confirmPassword"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Confirm Password</FormLabel>
+              <FormControl>
+                <Input
+                  disabled={isLoading}
+                  placeholder="Confirm your password"
+                  type="password"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <Button className="w-full" disabled={isLoading} type="submit">
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating account...
+            </>
+          ) : (
+            'Create account'
+          )}
+        </Button>
+      </form>
+    </Form>
+  );
+}

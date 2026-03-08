@@ -8,7 +8,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "openenvx",
+	Use:   "oexctl",
 	Short: "Local-first dev runtime - proxy, services, env; CLI and agent-friendly",
 	Long:  `OpenEnvX Runtime: local-first control plane for development. Proxy (*.localhost), services, env; use from the CLI or let an AI agent drive it via MCP.`,
 }

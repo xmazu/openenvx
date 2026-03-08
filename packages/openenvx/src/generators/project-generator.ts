@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { execa } from 'execa';
 import fs from 'fs-extra';
@@ -34,6 +35,7 @@ export type PackageManager = 'bun' | 'pnpm';
 
 interface GenerateContext {
   config: ProjectConfig;
+  hasOexctl: boolean;
   packageManager: PackageManager;
   state: State;
   targetDir: string;
@@ -55,12 +57,23 @@ async function detectPackageManager(): Promise<PackageManager> {
   }
 }
 
+function checkOexctlInstalled(): boolean {
+  try {
+    execSync('which oexctl', { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function createContext(
   config: ProjectConfig,
-  packageManager: PackageManager
+  packageManager: PackageManager,
+  hasOexctl: boolean
 ): GenerateContext {
   return {
     config,
+    hasOexctl,
     targetDir: path.resolve(process.cwd(), config.name),
     state: {
       features: [],
@@ -84,7 +97,12 @@ async function* createProjectDirectory(
 
 async function* generateBase(ctx: GenerateContext): AsyncGenerator<LogEntry> {
   yield { message: 'Generating base template...', level: 'spinner' };
-  await generateBaseTemplate(ctx.targetDir, ctx.config, ctx.packageManager);
+  await generateBaseTemplate(
+    ctx.targetDir,
+    ctx.config,
+    ctx.packageManager,
+    ctx.hasOexctl
+  );
   ctx.state.generated.push('base');
   yield { message: 'Base template generated', level: 'success' };
 }
@@ -121,7 +139,7 @@ async function* setupEnvironment(
   ctx: GenerateContext
 ): AsyncGenerator<LogEntry> {
   yield { message: 'Appending environment variables...', level: 'spinner' };
-  await appendEnvVariables(ctx.targetDir, ctx.config);
+  await appendEnvVariables(ctx.targetDir, ctx.config, ctx.hasOexctl);
 
   await fs.ensureDir(path.join(ctx.targetDir, '.openenvx'));
   await fs.writeJson(
@@ -211,28 +229,43 @@ async function* initGit(ctx: GenerateContext): AsyncGenerator<LogEntry> {
   yield { message: 'Git repository initialized', level: 'success' };
 }
 
+const SHADCN_COMPONENTS = [
+  'alert',
+  'avatar',
+  'badge',
+  'button',
+  'card',
+  'dropdown-menu',
+  'form',
+  'input',
+  'label',
+  'separator',
+  'sheet',
+  'sidebar',
+  'skeleton',
+  'tooltip',
+] as const;
+
 async function* initShadcn(ctx: GenerateContext): AsyncGenerator<LogEntry> {
   yield { message: 'Adding shadcn/ui components...', level: 'spinner' };
 
-  const webAppDir = path.join(ctx.targetDir, 'apps', 'web');
+  const uiPackageDir = path.join(ctx.targetDir, 'packages', 'ui');
 
   const runCmd = ctx.packageManager === 'bun' ? 'bunx' : 'pnpm';
   const runArgs =
     ctx.packageManager === 'bun'
-      ? ['shadcn@latest', 'add', '-y', 'button', 'card', 'input', 'label']
+      ? ['shadcn@latest', 'add', '-y', '--overwrite', ...SHADCN_COMPONENTS]
       : [
           'exec',
           'shadcn@latest',
           'add',
           '-y',
-          'button',
-          'card',
-          'input',
-          'label',
+          '--overwrite',
+          ...SHADCN_COMPONENTS,
         ];
 
   await execa(runCmd, runArgs, {
-    cwd: webAppDir,
+    cwd: uiPackageDir,
     stdout: 'inherit',
     stderr: 'inherit',
   });
@@ -246,7 +279,24 @@ export async function* generateProject(
   const packageManager = await detectPackageManager();
   yield { message: `Using package manager: ${packageManager}`, level: 'info' };
 
-  const ctx = createContext(config, packageManager);
+  const hasOexctl = checkOexctlInstalled();
+  if (hasOexctl) {
+    yield {
+      message: 'oexctl detected - configuring proxy URLs',
+      level: 'info',
+    };
+  } else {
+    yield {
+      message: 'oexctl not detected - using fallback ports',
+      level: 'info',
+    };
+    yield {
+      message: 'Install oexctl for better URLs: openenvx install',
+      level: 'info',
+    };
+  }
+
+  const ctx = createContext(config, packageManager, hasOexctl);
 
   yield* createProjectDirectory(ctx);
   yield* generateBase(ctx);
@@ -255,5 +305,6 @@ export async function* generateProject(
   yield* addWorkspaceDependencies(ctx);
   yield* installDependencies(ctx);
   yield* initShadcn(ctx);
+  // yield* installDependencies(ctx);
   yield* initGit(ctx);
 }
