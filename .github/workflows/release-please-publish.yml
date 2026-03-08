@@ -14,6 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
+      openenvx_release: ${{ steps.release.outputs['packages/openenvx--release_created'] }}
+      envtyped_release: ${{ steps.release.outputs['packages/envtyped--release_created'] }}
+      runtime_release: ${{ steps.release.outputs['runtime--release_created'] }}
+      envx_release: ${{ steps.release.outputs['envx--release_created'] }}
       version: ${{ steps.release.outputs['packages/openenvx--version'] }}
     steps:
       - uses: googleapis/release-please-action@v4
@@ -23,10 +27,10 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
-  publish-js-packages:
+  publish-openenvx:
     needs: release-please
     runs-on: ubuntu-latest
-    if: ${{ needs.release-please.outputs.releases_created == 'true' }}
+    if: ${{ needs.release-please.outputs.openenvx_release == 'true' }}
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v1
@@ -36,12 +40,25 @@ jobs:
       - run: bun run build
       - run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
       - run: cd packages/openenvx && npm publish --access public
+
+  publish-envtyped:
+    needs: release-please
+    runs-on: ubuntu-latest
+    if: ${{ needs.release-please.outputs.envtyped_release == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      - run: bun install
+      - run: bun run build
+      - run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
       - run: cd packages/envtyped && npm publish --access public
 
   build-go-binaries:
     needs: release-please
     runs-on: ubuntu-latest
-    if: ${{ needs.release-please.outputs.releases_created == 'true' }}
+    if: ${{ needs.release-please.outputs.runtime_release == 'true' || needs.release-please.outputs.envx_release == 'true' }}
     strategy:
       matrix:
         include:
@@ -78,7 +95,7 @@ jobs:
   upload-go-release-assets:
     needs: [release-please, build-go-binaries]
     runs-on: ubuntu-latest
-    if: ${{ needs.release-please.outputs.releases_created == 'true' }}
+    if: ${{ needs.release-please.outputs.runtime_release == 'true' || needs.release-please.outputs.envx_release == 'true' }}
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -87,12 +104,14 @@ jobs:
           merge-multiple: true
 
       - name: Upload oexctl assets
+        if: ${{ needs.release-please.outputs.runtime_release == 'true' }}
         run: |
-          gh release upload oexctl-v${{ needs.release-please.outputs.version }} dist/oexctl-* --clobber
+          gh release upload runtime-v${{ needs.release-please.outputs.version }} dist/oexctl-* --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload envx assets
+        if: ${{ needs.release-please.outputs.envx_release == 'true' }}
         run: |
           gh release upload envx-v${{ needs.release-please.outputs.version }} dist/envx-* --clobber
         env:
