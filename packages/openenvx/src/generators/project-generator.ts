@@ -67,8 +67,8 @@ function checkOexctlInstalled(): boolean {
 }
 
 function installOexctl(): Promise<boolean> {
-  const installScriptUrl =
-    'https://raw.githubusercontent.com/xmazu/openenvx/main/runtime/scripts/install.sh';
+  const cacheBuster = Date.now();
+  const installScriptUrl = `https://raw.githubusercontent.com/xmazu/openenvx/main/runtime/scripts/install.sh?${cacheBuster}`;
 
   return new Promise((resolve) => {
     const child = spawn(
