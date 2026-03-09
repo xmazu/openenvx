@@ -1,101 +1,27 @@
-import { execSync, spawn } from 'node:child_process';
 import path from 'node:path';
 import { execa } from 'execa';
 import fs from 'fs-extra';
+import { SHADCN_COMPONENTS } from '../lib/constants';
 import {
   addPackageDependency,
   appendEnvVariables,
   generateBaseTemplate,
   generateFeature,
 } from '../lib/templates';
+import type {
+  GenerateContext,
+  LogEntry,
+  PackageManager,
+  ProjectConfig,
+} from '../lib/types';
+import {
+  checkOexctlInstalled,
+  detectPackageManager,
+  filterShadcnTooltipMessage,
+  installOexctl,
+} from '../lib/utils';
 
-export interface ProjectConfig {
-  database: string;
-  features: {
-    stripe: boolean;
-    storage: boolean;
-    email: boolean;
-  };
-  name: string;
-  projectName: string;
-}
-
-export interface State {
-  features: string[];
-  generated: string[];
-}
-
-export type LogLevel = 'info' | 'success' | 'warning' | 'error' | 'spinner';
-export interface LogEntry {
-  level: LogLevel;
-  message: string;
-}
-
-export type PackageManager = 'bun' | 'pnpm';
-
-interface GenerateContext {
-  config: ProjectConfig;
-  hasOexctl: boolean;
-  packageManager: PackageManager;
-  state: State;
-  targetDir: string;
-}
-
-async function detectPackageManager(): Promise<PackageManager> {
-  try {
-    await execa('bun', ['--version'], { stdio: 'ignore' });
-    return 'bun';
-  } catch {
-    try {
-      await execa('pnpm', ['--version'], { stdio: 'ignore' });
-      return 'pnpm';
-    } catch {
-      throw new Error(
-        'No package manager found. Please install Bun (https://bun.sh) or pnpm (https://pnpm.io).'
-      );
-    }
-  }
-}
-
-function checkOexctlInstalled(): boolean {
-  try {
-    execSync('which oexctl', { stdio: 'ignore' });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function installOexctl(): Promise<boolean> {
-  const cacheBuster = Date.now();
-  const installScriptUrl = `https://raw.githubusercontent.com/xmazu/openenvx/main/runtime/scripts/install.sh?${cacheBuster}`;
-
-  return new Promise((resolve) => {
-    const child = spawn(
-      'bash',
-      ['-c', `curl -fsSL "${installScriptUrl}" | bash`],
-      {
-        stdio: ['inherit', 'pipe', 'pipe'],
-      }
-    );
-
-    child.stdout?.on('data', (data: Buffer) => {
-      process.stdout.write(data);
-    });
-
-    child.stderr?.on('data', (data: Buffer) => {
-      process.stderr.write(data);
-    });
-
-    child.on('close', (code: number | null) => {
-      resolve(code === 0);
-    });
-
-    child.on('error', () => {
-      resolve(false);
-    });
-  });
-}
+export type { ProjectConfig } from '../lib/types';
 
 function createContext(
   config: ProjectConfig,
@@ -131,6 +57,11 @@ async function* generateBase(ctx: GenerateContext): AsyncGenerator<LogEntry> {
   await generateBaseTemplate(ctx.targetDir, ctx.config, ctx.packageManager);
   ctx.state.generated.push('base');
   yield { message: 'Base template generated', level: 'success' };
+
+  yield { message: 'Configuring services...', level: 'spinner' };
+  ctx.state.features.push('postgres');
+  ctx.state.generated.push('services');
+  yield { message: 'Services configured (run: oexctl up)', level: 'success' };
 }
 
 async function* generateFeatures(
@@ -253,65 +184,6 @@ async function* initGit(ctx: GenerateContext): AsyncGenerator<LogEntry> {
     }
   );
   yield { message: 'Git repository initialized', level: 'success' };
-}
-
-const SHADCN_COMPONENTS = [
-  'alert',
-  'avatar',
-  'badge',
-  'button',
-  'card',
-  'dropdown-menu',
-  'form',
-  'input',
-  'label',
-  'separator',
-  'sheet',
-  'sidebar',
-  'skeleton',
-  'tooltip',
-] as const;
-
-function filterShadcnTooltipMessage(output: string): string {
-  const lines = output.split('\n');
-  const result: string[] = [];
-
-  let skipping = false;
-  let inFenceBlock = false;
-
-  for (const line of lines) {
-    if (
-      !skipping &&
-      line.includes(
-        'The `tooltip` component has been added. Remember to wrap your app with the `TooltipProvider` component.'
-      )
-    ) {
-      skipping = true;
-      inFenceBlock = false;
-      continue;
-    }
-
-    if (skipping) {
-      const trimmed = line.trimStart();
-
-      if (trimmed.startsWith('```')) {
-        if (!inFenceBlock) {
-          inFenceBlock = true;
-          continue;
-        }
-
-        skipping = false;
-        inFenceBlock = false;
-        continue;
-      }
-
-      continue;
-    }
-
-    result.push(line);
-  }
-
-  return result.join('\n').trimEnd();
 }
 
 async function* initShadcn(ctx: GenerateContext): AsyncGenerator<LogEntry> {

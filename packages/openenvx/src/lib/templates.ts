@@ -1,57 +1,10 @@
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import fs from 'fs-extra';
 import { globby } from 'globby';
 import Handlebars from 'handlebars';
-import type { PackageManager } from '../generators/project-generator';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-const dependencyCatalog = {
-  react: '^19.2.4',
-  'react-dom': '^19.2.4',
-  next: '^16.1.6',
-  typescript: '^5.9.3',
-  '@types/react': '^19.2.14',
-  '@types/react-dom': '^19.2.3',
-  '@types/node': '^25.3.3',
-  tailwindcss: '^4.2.1',
-  postcss: '^8.5.8',
-  autoprefixer: '^10.4.27',
-  'drizzle-orm': '^0.45.1',
-  'drizzle-kit': '^0.31.9',
-  'better-auth': '^1.5.3',
-  '@neondatabase/serverless': '^1.0.2',
-  'class-variance-authority': '^0.7.1',
-  clsx: '^2.1.1',
-  'tailwind-merge': '^3.5.0',
-  'tw-animate-css': '1.3.6',
-  '@tailwindcss/postcss': '^4',
-  zod: '^4.3.0',
-} as const;
-
-function getTemplatesDir(subPath: string): string {
-  const builtPath = path.join(__dirname, 'template', subPath);
-  if (fs.existsSync(builtPath)) {
-    return builtPath;
-  }
-  const devPath = path.join(__dirname, '../..', 'template', subPath);
-  if (fs.existsSync(devPath)) {
-    return devPath;
-  }
-  return devPath;
-}
-
-interface ProjectConfig {
-  database: string;
-  features: {
-    stripe: boolean;
-    storage: boolean;
-    email: boolean;
-  };
-  name: string;
-  projectName: string;
-}
+import { dependencyCatalog } from './constants';
+import type { PackageManager, ProjectConfig } from './types';
+import { getTemplatesDir } from './utils';
 
 function generateRootPackageJson(
   projectName: string,
@@ -170,6 +123,23 @@ export async function generateBaseTemplate(
         await fs.chmod(path.join(scriptsDir, scriptFile), 0o755);
       }
     }
+  }
+
+  // Generate services configuration for oexctl
+  const servicesTemplatePath = getTemplatesDir(
+    path.join('base', '.openenvx', 'services.yaml.hbs')
+  );
+  if (await fs.pathExists(servicesTemplatePath)) {
+    const servicesContent = await fs.readFile(servicesTemplatePath, 'utf-8');
+    const servicesTemplate = Handlebars.compile(servicesContent);
+    const renderedServices = servicesTemplate(config);
+    const servicesTargetPath = path.join(
+      targetDir,
+      '.openenvx',
+      'services.yaml'
+    );
+    await fs.ensureDir(path.dirname(servicesTargetPath));
+    await fs.writeFile(servicesTargetPath, renderedServices);
   }
 }
 
