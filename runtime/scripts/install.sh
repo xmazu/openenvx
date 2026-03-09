@@ -53,8 +53,12 @@ detect_arch() {
 
 # Get the latest oexctl release version
 get_latest_version() {
-    # Get all releases and filter for oexctl tags, then get the latest one
-    version=$(curl -s "https://api.github.com/repos/${REPO}/releases" | grep '"tag_name"' | grep 'oexctl-' | head -1 | cut -d'"' -f4 2>/dev/null)
+    # Use sed to extract tag_name values, then filter for oexctl
+    # This handles minified JSON properly
+    version=$(curl -s "https://api.github.com/repos/${REPO}/releases" | \
+        sed -n 's/.*"tag_name": "\([^"]*\)".*/\1/p' | \
+        grep '^oexctl-' | \
+        head -1)
 
     if [ -z "$version" ]; then
         echo ""
