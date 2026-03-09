@@ -58,10 +58,14 @@ async function* generateBase(ctx: GenerateContext): AsyncGenerator<LogEntry> {
   ctx.state.generated.push('base');
   yield { message: 'Base template generated', level: 'success' };
 
-  yield { message: 'Configuring services...', level: 'spinner' };
-  ctx.state.features.push('postgres');
-  ctx.state.generated.push('services');
-  yield { message: 'Services configured (run: oexctl up)', level: 'success' };
+  if (
+    ctx.config.database === 'postgres' ||
+    ctx.config.database === 'postgresql'
+  ) {
+    yield { message: 'Configuring services...', level: 'spinner' };
+    ctx.state.features.push('postgres');
+    yield { message: 'Services configured (run: oexctl up)', level: 'success' };
+  }
 }
 
 async function* generateFeatures(

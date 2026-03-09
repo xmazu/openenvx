@@ -205,6 +205,10 @@ export async function appendEnvVariables(
   }
 
   const templateContent = await fs.readFile(envTemplatePath, 'utf-8');
+
+  Handlebars.registerHelper('eq', (a: string, b: string) => a === b);
+  Handlebars.registerHelper('or', (a: boolean, b: boolean) => a || b);
+
   const template = Handlebars.compile(templateContent);
   const templateContext = {
     ...config,

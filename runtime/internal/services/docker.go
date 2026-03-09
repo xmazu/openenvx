@@ -43,6 +43,7 @@ func (d *Docker) Stop(ctx context.Context, composeFile string) error {
 type container struct {
 	Service    string `json:"Service"`
 	State      string `json:"State"`
+	Health     string `json:"Health"`
 	Publishers []struct {
 		TargetPort    int `json:"TargetPort"`
 		PublishedPort int `json:"PublishedPort"`
@@ -77,7 +78,7 @@ func (d *Docker) Status(ctx context.Context, composeFile string) ([]Status, erro
 			Name:    c.Service,
 			State:   c.State,
 			Ports:   ports,
-			Healthy: c.State == "running",
+			Healthy: c.State == "running" && (c.Health == "" || c.Health == "healthy"),
 		})
 	}
 	return result, nil
