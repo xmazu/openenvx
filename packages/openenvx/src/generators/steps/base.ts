@@ -15,6 +15,9 @@ export async function* generateBase(
   ) {
     yield { message: 'Configuring services...', level: 'spinner' };
     ctx.state.features.push('postgres');
-    yield { message: 'Services configured (run: oexctl up)', level: 'success' };
+    yield {
+      message: 'docker-compose.yml configured',
+      level: 'success',
+    };
   }
 }

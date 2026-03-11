@@ -1,9 +1,5 @@
 import type { LogEntry, ProjectConfig } from '../lib/types';
-import {
-  checkOexctlInstalled,
-  detectPackageManager,
-  installOexctl,
-} from '../lib/utils';
+import { detectPackageManager } from '../lib/utils';
 import { createContext } from './context';
 import { generateBase } from './steps/base';
 import { installDependencies } from './steps/dependencies';
@@ -22,38 +18,7 @@ export async function* generateProject(
   const packageManager = await detectPackageManager();
   yield { message: `Using package manager: ${packageManager}`, level: 'info' };
 
-  let hasOexctl = checkOexctlInstalled();
-  if (hasOexctl) {
-    yield {
-      message: 'oexctl detected - configuring proxy URLs',
-      level: 'info',
-    };
-  } else {
-    yield {
-      message: 'oexctl not detected - attempting automatic installation...',
-      level: 'spinner',
-    };
-
-    const installed = await installOexctl();
-    if (installed) {
-      hasOexctl = true;
-      yield {
-        message: 'oexctl installed successfully - configuring proxy URLs',
-        level: 'success',
-      };
-    } else {
-      yield {
-        message: 'oexctl installation failed - using fallback ports',
-        level: 'warning',
-      };
-      yield {
-        message: 'Install manually: openenvx install',
-        level: 'info',
-      };
-    }
-  }
-
-  const ctx = createContext(config, packageManager, hasOexctl);
+  const ctx = createContext(config, packageManager);
 
   yield* createProjectDirectory(ctx);
   yield* generateBase(ctx);

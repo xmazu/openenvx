@@ -25,7 +25,6 @@ export interface State {
 
 export interface GenerateContext {
   config: ProjectConfig;
-  hasOexctl: boolean;
   packageManager: PackageManager;
   state: State;
   targetDir: string;

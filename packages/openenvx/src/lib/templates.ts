@@ -23,6 +23,7 @@ function generateRootPackageJson(
       'db:studio': 'turbo db:studio',
     },
     devDependencies: {
+      portless: '^0.6.0',
       turbo: '^2.8.13',
       typescript: 'catalog:',
     },
@@ -59,6 +60,8 @@ export async function generateBaseTemplate(
   Handlebars.registerHelper('scopedName', (name: string) => {
     return `@${config.projectName}/${name}`;
   });
+  Handlebars.registerHelper('eq', (a: string, b: string) => a === b);
+  Handlebars.registerHelper('or', (a: boolean, b: boolean) => a || b);
 
   const templateFiles = await globby('**/*.hbs', {
     cwd: templatesDir,
@@ -124,23 +127,6 @@ export async function generateBaseTemplate(
       }
     }
   }
-
-  // Generate services configuration for oexctl
-  const servicesTemplatePath = getTemplatesDir(
-    path.join('base', '.openenvx', 'services.yaml.hbs')
-  );
-  if (await fs.pathExists(servicesTemplatePath)) {
-    const servicesContent = await fs.readFile(servicesTemplatePath, 'utf-8');
-    const servicesTemplate = Handlebars.compile(servicesContent);
-    const renderedServices = servicesTemplate(config);
-    const servicesTargetPath = path.join(
-      targetDir,
-      '.openenvx',
-      'services.yaml'
-    );
-    await fs.ensureDir(path.dirname(servicesTargetPath));
-    await fs.writeFile(servicesTargetPath, renderedServices);
-  }
 }
 
 export async function generateFeature(
@@ -195,8 +181,7 @@ export async function generateFeature(
 
 export async function appendEnvVariables(
   targetDir: string,
-  config: ProjectConfig,
-  hasOexctl: boolean
+  config: ProjectConfig
 ): Promise<void> {
   const envTemplatePath = getTemplatesDir(path.join('features', 'env.hbs'));
 
@@ -212,7 +197,6 @@ export async function appendEnvVariables(
   const template = Handlebars.compile(templateContent);
   const templateContext = {
     ...config,
-    hasOexctl,
   };
   const rendered = template(templateContext);
 

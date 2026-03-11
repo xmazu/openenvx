@@ -7,12 +7,10 @@ import type {
 
 export function createContext(
   config: ProjectConfig,
-  packageManager: PackageManager,
-  hasOexctl: boolean
+  packageManager: PackageManager
 ): GenerateContext {
   return {
     config,
-    hasOexctl,
     targetDir: path.resolve(process.cwd(), config.name),
     state: {
       features: [],

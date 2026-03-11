@@ -1,4 +1,3 @@
-import { execSync, spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execa } from 'execa';
@@ -33,46 +32,6 @@ export async function detectPackageManager(): Promise<PackageManager> {
       );
     }
   }
-}
-
-export function checkOexctlInstalled(): boolean {
-  try {
-    execSync('which oexctl', { stdio: 'ignore' });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export function installOexctl(): Promise<boolean> {
-  const cacheBuster = Date.now();
-  const installScriptUrl = `https://raw.githubusercontent.com/xmazu/openenvx/main/runtime/scripts/install.sh?${cacheBuster}`;
-
-  return new Promise((resolve) => {
-    const child = spawn(
-      'bash',
-      ['-c', `curl -fsSL "${installScriptUrl}" | bash`],
-      {
-        stdio: ['inherit', 'pipe', 'pipe'],
-      }
-    );
-
-    child.stdout?.on('data', (data: Buffer) => {
-      process.stdout.write(data);
-    });
-
-    child.stderr?.on('data', (data: Buffer) => {
-      process.stderr.write(data);
-    });
-
-    child.on('close', (code: number | null) => {
-      resolve(code === 0);
-    });
-
-    child.on('error', () => {
-      resolve(false);
-    });
-  });
 }
 
 export function filterShadcnTooltipMessage(output: string): string {

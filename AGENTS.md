@@ -38,28 +38,44 @@ OpenEnvX is a local-first development runtime for micro-SaaS builders focused on
   ├── openenvx/         # Project generator CLI (create-openenvx-app)
   └── envtyped/         # Typed env validation library (@openenvx/envtyped)
 /envx/                  # Go CLI for secure env management
-/runtime/               # oexctl - Go control plane CLI for local dev proxy
 ```
 
-## oexctl - Control Plane CLI
+## Local Development with Portless
 
-The `oexctl` CLI provides local development proxying with automatic TLS and subdomain routing.
+This project uses [portless](https://github.com/zuplo/portless) for local development reverse proxy with automatic TLS and named .localhost URLs.
+
+### Installation
 
 ```bash
-# Install (via openenvx init or curl)
-openenvx init  # Installs oexctl binary
-
-# Run an app with proxy
-oexctl proxy run myapp -- npm run dev
-
-# Access at https://myapp.localhost:1355
+npm install -g portless
 ```
 
-**Features:**
-- Automatic TLS certificate generation
-- Subdomain-based routing (*.localhost:1355)
-- No DNS configuration needed
-- Route management for multiple apps
+### Usage
+
+```bash
+# Run an app with automatic proxy
+portless run next dev
+# -> http://<project>.localhost:1355
+
+# Or with explicit name
+portless myapp next dev
+# -> http://myapp.localhost:1355
+```
+
+Add to package.json scripts:
+```json
+{
+  "scripts": {
+    "dev": "portless run next dev"
+  }
+}
+```
+
+### Features
+- Automatic TLS certificate generation (with `--https`)
+- Named .localhost URLs (no more port conflicts)
+- Git worktree support (branch names as subdomains)
+- Works with Next.js, Vite, Astro, and most frameworks
 
 ## Conventions
 

@@ -1,8 +1,0 @@
-# Build artifacts
-oexctl
-*.exe
-
-# Go
-vendor/
-*.test
-*.out

@@ -1,9 +1,10 @@
 version: "3.8"
 
 services:
+  {{#if (or (eq database 'postgres') (eq database 'postgresql'))}}
   postgres:
     image: postgres:16-alpine
-    container_name: {{projectName}}-postgres
+    container_name: postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -17,6 +18,9 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+  {{/if}}
 
+{{#if (or (eq database 'postgres') (eq database 'postgresql'))}}
 volumes:
   postgres_data:
+{{/if}}
