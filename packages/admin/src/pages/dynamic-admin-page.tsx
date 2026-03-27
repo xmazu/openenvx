@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AutoForm } from '@/components/auto-form';
 import type { BulkAction } from '@/components/bulk-operations';
 import { BulkOperations } from '@/components/bulk-operations';
-import { useForm, useList, useResourceConfig, useShow } from '@/hooks';
+import { useDataProvider, useList, useResourceConfig, useShow } from '@/hooks';
 import type { BulkActionConfig } from '@/lib/resource-types';
 import { cn } from '@/lib/utils';
 import { DeleteButton } from '@/ui/buttons/delete';
@@ -311,13 +311,27 @@ interface CreatePageViewProps {
 
 function CreatePageView({ resourceName }: CreatePageViewProps) {
   const { config, loading: configLoading } = useResourceConfig(resourceName);
-  const { onFinish, formLoading } = useForm({
-    resource: resourceName,
-    action: 'create',
-  });
+  const dataProvider = useDataProvider();
+  const [formLoading, setFormLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const handleSubmit = async (data: Record<string, unknown>) => {
-    await onFinish(data);
+    setFormLoading(true);
+    setFormError(null);
+
+    try {
+      await dataProvider.create({
+        resource: resourceName,
+        variables: data,
+      });
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to create record';
+      setFormError(errorMessage);
+      throw err;
+    } finally {
+      setFormLoading(false);
+    }
   };
 
   if (configLoading || !config) {
@@ -340,6 +354,7 @@ function CreatePageView({ resourceName }: CreatePageViewProps) {
       <CreateViewHeader />
       <div className="rounded-md border p-6">
         <AutoForm
+          error={formError}
           isLoading={formLoading}
           mode="create"
           onSubmit={handleSubmit}
@@ -357,19 +372,61 @@ interface EditPageViewProps {
 
 function EditPageView({ resourceName, recordId }: EditPageViewProps) {
   const { config, loading: configLoading } = useResourceConfig(resourceName);
-  const { query, formLoading, onFinish } = useForm({
-    resource: resourceName,
-    action: 'edit',
-    id: recordId,
-  });
+  const dataProvider = useDataProvider();
+  const [formLoading, setFormLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [record, setRecord] = useState<Record<string, unknown> | undefined>(
+    undefined
+  );
+  const [isRecordLoading, setIsRecordLoading] = useState(true);
 
-  const record = query?.data?.data as Record<string, unknown> | undefined;
+  // Fetch record data for edit mode
+  useEffect(() => {
+    const fetchRecord = async () => {
+      setIsRecordLoading(true);
+      setFormError(null);
+
+      try {
+        const response = await dataProvider.getOne({
+          resource: resourceName,
+          id: recordId,
+        });
+        setRecord(response.data as Record<string, unknown>);
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to fetch record';
+        setFormError(errorMessage);
+      } finally {
+        setIsRecordLoading(false);
+      }
+    };
+
+    if (recordId) {
+      fetchRecord();
+    }
+  }, [dataProvider, resourceName, recordId]);
 
   const handleSubmit = async (data: Record<string, unknown>) => {
-    await onFinish(data);
+    setFormLoading(true);
+    setFormError(null);
+
+    try {
+      await dataProvider.update({
+        resource: resourceName,
+        id: recordId,
+        variables: data,
+      });
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to update record';
+      setFormError(errorMessage);
+      throw err;
+    } finally {
+      setFormLoading(false);
+    }
   };
 
-  if (configLoading || !config || !record) {
+  if (configLoading || !config || isRecordLoading || !record) {
     return (
       <EditView>
         <EditViewHeader />
@@ -389,6 +446,7 @@ function EditPageView({ resourceName, recordId }: EditPageViewProps) {
       <EditViewHeader />
       <div className="rounded-md border p-6">
         <AutoForm
+          error={formError}
           initialData={record}
           isLoading={formLoading}
           mode="edit"
