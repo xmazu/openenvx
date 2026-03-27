@@ -197,13 +197,3 @@ export async function fetchReferenceData(
   `);
   return results as unknown as { id: string; label: string }[];
 }
-
-/**
- * Close database connection
- */
-export async function closeConnection(): Promise<void> {
-  if (sql) {
-    await sql.end();
-    sql = null;
-  }
-}

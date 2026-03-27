@@ -17,7 +17,7 @@ export const ShowButton = React.forwardRef<
   return (
     <Button {...rest} asChild ref={ref}>
       <Link
-        href={`/admin/${resource}/show/${recordItemId}`}
+        href={`/${resource}/show/${recordItemId}`}
         onClick={
           onClick as unknown as React.MouseEventHandler<HTMLAnchorElement>
         }

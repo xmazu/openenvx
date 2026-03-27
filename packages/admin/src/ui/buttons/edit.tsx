@@ -21,7 +21,7 @@ export const EditButton = React.forwardRef<
   return (
     <Button {...rest} asChild ref={ref}>
       <Link
-        href={`/admin/${resource}/edit/${recordItemId}`}
+        href={`/${resource}/edit/${recordItemId}`}
         onClick={
           onClick as unknown as React.MouseEventHandler<HTMLAnchorElement>
         }

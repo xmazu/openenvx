@@ -1,8 +1,9 @@
 'use client';
 
 import { ChevronRight, ListIcon } from 'lucide-react';
+import Link from 'next/link';
 import type React from 'react';
-import { useAdminOptions, useLink, useMenu } from '@/hooks';
+import { useAdminOptions, useMenu } from '@/hooks';
 import { cn } from '@/lib/utils';
 import type { TreeMenuItem } from '@/types';
 import { Button } from '@/ui/shadcn/button';
@@ -165,7 +166,6 @@ function SidebarItemCollapsible({ item, selectedKey }: MenuItemProps) {
 
 function SidebarItemDropdown({ item, selectedKey }: MenuItemProps) {
   const { children } = item;
-  const Link = useLink();
 
   return (
     <DropdownMenu>
@@ -307,8 +307,6 @@ function SidebarButton({
   onClick,
   ...props
 }: SidebarButtonProps) {
-  const Link = useLink();
-
   const buttonContent = (
     <>
       <ItemIcon icon={item.meta?.icon ?? item.icon} isSelected={isSelected} />

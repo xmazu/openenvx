@@ -26,6 +26,8 @@
     "node": ">=20"
   },
   "dependencies": {
-    "react-hook-form": "^7.71.2"
+    "@hookform/resolvers": "^5.2.2",
+    "react-hook-form": "^7.72.0",
+    "zod": "^4.3.6"
   }
 }

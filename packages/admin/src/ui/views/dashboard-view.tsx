@@ -1,7 +1,7 @@
 'use client';
 
 import { Database, LayoutDashboard, Rows3, Table2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useResources } from '@/hooks';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/shadcn/card';
 import { Skeleton } from '@/ui/shadcn/skeleton';
@@ -47,69 +47,30 @@ interface AdminDashboardProps {
   className?: string;
 }
 
-interface TableInfo {
-  table_name: string;
-}
-
 export function AdminDashboard({ className }: AdminDashboardProps) {
-  const [tables, setTables] = useState<TableInfo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { resources } = useResources();
 
-  useEffect(() => {
-    async function fetchTables() {
-      try {
-        const response = await fetch('/api/admin/introspection/tables');
-        if (!response.ok) {
-          throw new Error('Failed to fetch tables');
-        }
-        const data = await response.json();
-        setTables(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchTables();
-  }, []);
-
-  const tableCount = tables.length;
-
-  function renderTablesContent() {
-    if (loading) {
-      return (
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-full" />
-        </div>
-      );
-    }
-
-    if (error) {
-      return <p className="text-destructive text-sm">Error: {error}</p>;
-    }
-
-    if (tables.length === 0) {
+  function renderResourcesContent() {
+    if (resources.length === 0) {
       return (
         <p className="text-muted-foreground text-sm">
-          No tables found in the database.
+          No resources configured.
         </p>
       );
     }
 
     return (
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {tables.map((table) => (
+        {resources.map((resource) => (
           <a
             className="flex items-center gap-2 rounded-md border p-3 transition-colors hover:bg-muted"
-            href={`/${table.table_name}`}
-            key={table.table_name}
+            href={resource.list}
+            key={resource.name}
           >
             <Table2 className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium">{table.table_name}</span>
+            <span className="font-medium">
+              {resource.label || resource.name}
+            </span>
           </a>
         ))}
       </div>
@@ -125,18 +86,16 @@ export function AdminDashboard({ className }: AdminDashboardProps) {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <DashboardCard
-          description="Database tables available"
+          description="Active resources in admin panel"
           icon={<Database className="h-4 w-4 text-muted-foreground" />}
-          loading={loading}
-          title="Total Tables"
-          value={tableCount}
+          title="Resources"
+          value={resources.length}
         />
         <DashboardCard
-          description="Resources in admin panel"
-          icon={<Table2 className="h-4 -w-4 text-muted-foreground" />}
-          loading={loading}
+          description="Resources with list view"
+          icon={<Table2 className="h-4 w-4 text-muted-foreground" />}
           title="Active Resources"
-          value={tableCount}
+          value={resources.filter((r) => r.list).length}
         />
         <DashboardCard
           description="All systems operational"
@@ -148,9 +107,9 @@ export function AdminDashboard({ className }: AdminDashboardProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Available Tables</CardTitle>
+          <CardTitle>Available Resources</CardTitle>
         </CardHeader>
-        <CardContent>{renderTablesContent()}</CardContent>
+        <CardContent>{renderResourcesContent()}</CardContent>
       </Card>
     </div>
   );

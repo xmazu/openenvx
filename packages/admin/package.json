@@ -1,52 +1,12 @@
 {
   "name": "@openenvx/admin",
   "version": "0.1.0",
-  "author": "OpenEnvX",
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4.0.0",
-    "@types/node": "^25.3.5",
-    "@types/react": "^19.0.10",
-    "@types/react-dom": "^19.0.4",
-    "next": "^16.0.0",
-    "postcss-cli": "^11.0.1",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "rolldown": "^1.0.0-rc.11",
-    "tailwindcss": "^4.0.0",
-    "typescript": "^5.9.3"
+  "type": "module",
+  "author": {
+    "email": "xmazu@yahoo.com",
+    "name": "xmazu"
   },
-  "peerDependencies": {
-    "@tanstack/react-table": "^8.21.3",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "next": "^16.0.0"
-  },
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.js",
-      "default": "./dist/index.js"
-    },
-    "./server": {
-      "types": "./dist/server/index.d.ts",
-      "import": "./dist/server/index.js",
-      "require": "./dist/server/index.js",
-      "default": "./dist/server/index.js"
-    },
-    "./client": {
-      "types": "./dist/client/index.d.ts",
-      "import": "./dist/client/index.js",
-      "require": "./dist/client/index.js",
-      "default": "./dist/client/index.js"
-    },
-    "./dist/styles.css": {
-      "import": "./dist/styles.css",
-      "require": "./dist/styles.css",
-      "default": "./dist/styles.css"
-    }
-  },
-  "description": "Standalone admin panel using PostgREST, Refine and shadcn/ui",
+  "description": "Standalone admin panel",
   "files": [
     "dist"
   ],
@@ -60,17 +20,52 @@
     "typecheck": "tsc --noEmit || true",
     "prepublishOnly": "bun run build"
   },
-  "type": "module",
-  "types": "./dist/index.d.ts",
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
-    "date-fns": "^4.1.0",
-    "lucide-react": "^0.577.0",
-    "postgres": "^3.4.5",
+    "lucide-react": "^1.7.0",
+    "postgres": "^3.4.8",
     "radix-ui": "^1.4.3",
     "react-day-picker": "^9.14.0",
-    "tailwind-merge": "^2.5.0"
+    "tailwind-merge": "^3.5.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/node": "^25.3.5",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "next": "^16.2.1",
+    "postcss-cli": "^11.0.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "rolldown": "^1.0.0-rc.11",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^6.0.2"
+  },
+  "peerDependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "@tanstack/react-table": "^8.21.3",
+    "next": "^16.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-hook-form": "^7.72.0",
+    "zod": "^4.3.6"
+  },
+  "exports": {
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js",
+      "default": "./dist/server.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.js",
+      "default": "./dist/client.js"
+    },
+    "./client/styles.css": {
+      "import": "./dist/styles.css",
+      "default": "./dist/styles.css"
+    }
   }
 }

@@ -64,7 +64,7 @@ program
     );
 
     const adminEnabled = await clackConfirm({
-      message: 'Include Admin Panel? (Refine + shadcn/ui table)',
+      message: 'Include Admin Panel?',
       initialValue: false,
     });
 

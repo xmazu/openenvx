@@ -1,8 +1,9 @@
 'use client';
 
 import { Home } from 'lucide-react';
+import Link from 'next/link';
 import { Fragment, useMemo } from 'react';
-import { useBreadcrumb, useLink } from '@/hooks';
+import { useBreadcrumb } from '@/hooks';
 import {
   Breadcrumb as ShadcnBreadcrumb,
   BreadcrumbItem as ShadcnBreadcrumbItem,
@@ -12,7 +13,6 @@ import {
 } from '@/ui/shadcn/breadcrumb';
 
 export function Breadcrumb() {
-  const Link = useLink();
   const { breadcrumbs } = useBreadcrumb();
 
   const breadCrumbItems = useMemo(() => {
@@ -45,7 +45,7 @@ export function Breadcrumb() {
     }
 
     return list;
-  }, [breadcrumbs, Link]);
+  }, [breadcrumbs]);
 
   return (
     <ShadcnBreadcrumb>

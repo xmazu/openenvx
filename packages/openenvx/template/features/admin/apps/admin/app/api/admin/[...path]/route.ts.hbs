@@ -1,13 +1,66 @@
-import { createPostgRESTProxy } from "@openenvx/admin/server";
+import { createAdmin } from "@openenvx/admin/server";
 import { type NextRequest } from "next/server";
 
-const proxy = createPostgRESTProxy({
+// Define your admin configuration with hooks here
+// This file is generated once - you can customize hooks per resource
+export const admin = createAdmin({
   postgrestUrl: process.env.POSTGREST_URL || "http://localhost:3001",
   getToken: (request: NextRequest) => {
     // Get token from session/cookie if using authentication
     // For now, return null to use PostgREST anonymous role
     return null;
   },
+  resources: {
+    // Example: Add hooks for users resource
+    // users: {
+    //   hooks: {
+    //     beforeCreate: async (data, context) => {
+    //       // Transform data before creation
+    //       // e.g., hash password, generate slug, validate email
+    //       return data;
+    //     },
+    //     afterCreate: async (data, context) => {
+    //       // Side effects after creation
+    //       // e.g., send welcome email, create audit log
+    //     },
+    //     beforeUpdate: async (data, id, context) => {
+    //       // Validate or transform before update
+    //       return data;
+    //     },
+    //     afterUpdate: async (data, id, context) => {
+    //       // Side effects after update
+    //     },
+    //     beforeDelete: async (id, context) => {
+    //       // Return false to cancel delete
+    //       // e.g., prevent deleting admin users
+    //       return true;
+    //     },
+    //     afterDelete: async (id, context) => {
+    //       // Cleanup after deletion
+    //       // e.g., delete related files, log activity
+    //     },
+    //     beforeList: async (params, context) => {
+    //       // Modify list query params
+    //       // e.g., add default filters, limit page size
+    //       return params;
+    //     },
+    //     afterList: async (data, context) => {
+    //       // Transform list results
+    //       // e.g., add computed fields, filter sensitive data
+    //       return data;
+    //     },
+    //   },
+    // },
+    // posts: {
+    //   hooks: {
+    //     beforeCreate: async (data, context) => {
+    //       data.slug = data.title?.toLowerCase().replace(/\s+/g, '-');
+    //       return data;
+    //     },
+    //   },
+    // },
+  },
 });
 
-export const { GET, POST, PUT, PATCH, DELETE } = proxy;
+// Export the handler for Next.js route
+export const { GET, POST, PUT, PATCH, DELETE } = admin.handler;

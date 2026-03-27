@@ -1,7 +1,6 @@
 'use client';
 
 import React, { createContext, useContext, useMemo } from 'react';
-import { resources } from '@/lib/resource-config';
 import type { IResourceItem, TreeMenuItem } from '@/types';
 
 interface ResourcesContextValue {
@@ -10,9 +9,9 @@ interface ResourcesContextValue {
   selectedKey?: string;
 }
 
-const ResourcesContext = createContext<ResourcesContextValue>({
-  resources: [],
+export const ResourcesContext = createContext<ResourcesContextValue>({
   menuItems: [],
+  resources: [],
 });
 
 export function useResources(): ResourcesContextValue {
@@ -21,23 +20,22 @@ export function useResources(): ResourcesContextValue {
 
 interface ResourcesProviderProps {
   children: React.ReactNode;
-  customResources?: IResourceItem[];
+  resources: IResourceItem[];
 }
 
 export function ResourcesProvider({
   children,
-  customResources,
+  resources,
 }: ResourcesProviderProps) {
   const value = useMemo(() => {
-    const allResources = customResources ?? resources;
-    const menuItems = buildMenuItems(allResources);
+    const menuItems = buildMenuItems(resources);
 
     return {
-      resources: allResources,
+      resources,
       menuItems,
       selectedKey: undefined,
     };
-  }, [customResources]);
+  }, [resources]);
 
   return React.createElement(ResourcesContext.Provider, { value }, children);
 }

@@ -1,12 +1,21 @@
 'use client';
 
 import { AdminContextProvider } from '@/hooks';
+import { ResourcesProvider } from '@/hooks/use-resources';
+import type { IResourceItem } from '@/types';
 import { Layout } from '@/ui/layout/layout';
 
-export const AdminProvider = ({ children }: { children: React.ReactNode }) => {
+export interface AdminProviderProps {
+  children: React.ReactNode;
+  resources: IResourceItem[];
+}
+
+export const AdminProvider = ({ children, resources }: AdminProviderProps) => {
   return (
     <AdminContextProvider>
-      <Layout>{children}</Layout>
+      <ResourcesProvider resources={resources}>
+        <Layout>{children}</Layout>
+      </ResourcesProvider>
     </AdminContextProvider>
   );
 };

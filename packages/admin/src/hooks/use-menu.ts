@@ -1,24 +1,25 @@
 'use client';
 
-import { useMemo } from 'react';
-import { resources as defaultResources } from '@/lib/resource-config';
+import { useContext, useMemo } from 'react';
 import type { IResourceItem, TreeMenuItem } from '@/types';
+import { ResourcesContext } from './use-resources';
 
 export interface UseMenuResult {
   menuItems: TreeMenuItem[];
   selectedKey?: string;
 }
 
-export function useMenu(customResources?: IResourceItem[]): UseMenuResult {
+export function useMenu(): UseMenuResult {
+  const context = useContext(ResourcesContext);
+
   return useMemo(() => {
-    const allResources = customResources ?? defaultResources;
-    const menuItems = buildMenuItems(allResources);
+    const menuItems = buildMenuItems(context?.resources ?? []);
 
     return {
       menuItems,
-      selectedKey: undefined,
+      selectedKey: context?.selectedKey,
     };
-  }, [customResources]);
+  }, [context]);
 }
 
 function buildMenuItems(resources: IResourceItem[]): TreeMenuItem[] {
