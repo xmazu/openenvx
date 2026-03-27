@@ -41,15 +41,3 @@ export const SHADCN_COMPONENTS = [
   'table',
   'tooltip',
 ] as const;
-
-// Refine.dev shadcn registry components for admin
-export const REFINE_REGISTRY_COMPONENTS = [
-  'https://ui.refine.dev/r/auto-save-indicator.json',
-  'https://ui.refine.dev/r/views.json',
-  'https://ui.refine.dev/r/data-table.json',
-  'https://ui.refine.dev/r/forms.json',
-  'https://ui.refine.dev/r/buttons.json',
-  'https://ui.refine.dev/r/layout.json',
-  'https://ui.refine.dev/r/error.json',
-  'https://ui.refine.dev/r/notification-provider.json',
-] as const;
