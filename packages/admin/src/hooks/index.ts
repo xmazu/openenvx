@@ -1,5 +1,5 @@
 export type {
-  AdminOptions as RefineOptions,
+  AdminOptions,
   AuthProvider,
   AutoSaveIndicatorProps,
   BaseKey,

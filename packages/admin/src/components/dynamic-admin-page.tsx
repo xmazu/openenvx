@@ -1,13 +1,17 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { AutoForm } from '@/components/auto-form';
+import type { BulkAction } from '@/components/bulk-operations';
+import { BulkOperations } from '@/components/bulk-operations';
 import { useForm, useList, useResourceConfig, useShow } from '@/hooks';
+import type { BulkActionConfig } from '@/lib/resource-types';
 import { cn } from '@/lib/utils';
 import { DeleteButton } from '@/ui/buttons/delete';
 import { EditButton } from '@/ui/buttons/edit';
 import { ListButton } from '@/ui/buttons/list';
 import { ShowButton } from '@/ui/buttons/show';
+import { Checkbox } from '@/ui/shadcn/checkbox';
 import { Skeleton } from '@/ui/shadcn/skeleton';
 import {
   Table,
@@ -114,9 +118,11 @@ function ListPageView({ resourceName }: ListPageViewProps) {
     resource: resourceName,
     pagination: { pageSize: 25 },
   });
+  const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
 
   const records = (listResult.result?.data || []) as Record<string, unknown>[];
   const isLoading = listResult.query?.isPending || configLoading;
+  const hasBulkActions = (config?.list?.bulkActions?.length ?? 0) > 0;
 
   const displayColumns = useMemo(() => {
     if (!config?.list?.columns || config.list.columns.length === 0) {
@@ -125,10 +131,84 @@ function ListPageView({ resourceName }: ListPageViewProps) {
     return config.list.columns;
   }, [config]);
 
+  const allRecordIds = useMemo(() => {
+    return records.map((record) => String(record.id ?? '')).filter(Boolean);
+  }, [records]);
+
+  const isAllSelected =
+    allRecordIds.length > 0 &&
+    allRecordIds.every((id) => selectedIds.includes(id));
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(allRecordIds);
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectRow = (recordId: string | number, checked: boolean) => {
+    if (checked) {
+      setSelectedIds((prev: (string | number)[]) => [...prev, recordId]);
+    } else {
+      setSelectedIds((prev: (string | number)[]) =>
+        prev.filter((id: string | number) => id !== recordId)
+      );
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIds([]);
+  };
+
+  const handleBulkAction = useCallback(
+    async (
+      actionKey: string,
+      ids: (string | number)[],
+      formData?: Record<string, unknown>
+    ) => {
+      console.log('Bulk action:', actionKey, ids, formData);
+      await listResult.query.refetch();
+      setSelectedIds([]);
+    },
+    [listResult.query]
+  );
+
+  const bulkActions: BulkAction[] = useMemo(() => {
+    const configs =
+      (config?.list?.bulkActions as BulkActionConfig[] | undefined) || [];
+    return configs.map((config: BulkActionConfig) => ({
+      key: config.key,
+      label: config.label,
+      icon: undefined,
+      confirm: config.confirm,
+      dialog: config.dialog
+        ? {
+            title: config.dialog.title,
+            fields: config.dialog.fields,
+            handler: async (
+              ids: (string | number)[],
+              formData: Record<string, unknown>
+            ) => {
+              await handleBulkAction(config.key, ids, formData);
+            },
+          }
+        : undefined,
+      handler: async (ids: (string | number)[]) => {
+        await handleBulkAction(config.key, ids);
+      },
+    }));
+  }, [config?.list?.bulkActions, handleBulkAction]);
+
   function renderTableBody() {
     if (isLoading) {
       return (
         <TableRow>
+          {hasBulkActions && (
+            <TableCell>
+              <Skeleton className="h-4 w-4" />
+            </TableCell>
+          )}
           {displayColumns.map((column) => (
             <TableCell key={column}>
               <Skeleton className="h-4 w-full" />
@@ -146,7 +226,7 @@ function ListPageView({ resourceName }: ListPageViewProps) {
         <TableRow>
           <TableCell
             className="h-24 text-center"
-            colSpan={displayColumns.length + 1}
+            colSpan={displayColumns.length + (hasBulkActions ? 2 : 1)}
           >
             No records found.
           </TableCell>
@@ -156,8 +236,22 @@ function ListPageView({ resourceName }: ListPageViewProps) {
 
     return records.map((record: Record<string, unknown>) => {
       const recordId = String(record.id ?? Math.random());
+      const isSelected = selectedIds.includes(recordId);
       return (
-        <TableRow key={recordId}>
+        <TableRow
+          data-state={isSelected ? 'selected' : undefined}
+          key={recordId}
+        >
+          {hasBulkActions && (
+            <TableCell>
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={(checked: boolean) =>
+                  handleSelectRow(recordId, checked)
+                }
+              />
+            </TableCell>
+          )}
           {displayColumns.map((column) => (
             <TableCell key={column}>
               {formatCellValue(record[column])}
@@ -178,10 +272,26 @@ function ListPageView({ resourceName }: ListPageViewProps) {
   return (
     <ListView>
       <ListViewHeader canCreate={config?.canCreate ?? true} />
+      {hasBulkActions && selectedIds.length > 0 && (
+        <BulkOperations
+          actions={bulkActions}
+          onClearSelection={handleClearSelection}
+          selectedIds={selectedIds}
+        />
+      )}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
+              {hasBulkActions && (
+                <TableHead className="w-[40px]">
+                  <Checkbox
+                    aria-label="Select all"
+                    checked={isAllSelected}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
+              )}
               {displayColumns.map((column) => (
                 <TableHead key={column}>{column}</TableHead>
               ))}

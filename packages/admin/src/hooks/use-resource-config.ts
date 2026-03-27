@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import type { FieldConfig, ResourceConfig } from '@/lib/resource-protocol';
-import { autoGenerateField } from '@/lib/resource-protocol';
+
 import type { TableSchema } from '@/server/introspection';
+import type { FieldConfig, ResourceConfig } from '@/lib/resource-types';
+import { autoGenerateField } from '@/lib/resource-types';
 
 const LABEL_REGEX_UNDERSCORE = /_/g;
 const LABEL_REGEX_CAMEL = /([A-Z])/g;

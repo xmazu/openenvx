@@ -12,7 +12,6 @@ const externalDeps = [
   '@radix-ui',
   'use-sync-external-store',
   'cmdk',
-  'date-fns',
   'react-day-picker',
   'tailwind-merge',
   'class-variance-authority',
@@ -29,19 +28,7 @@ const external = (id: string) => {
 
 export default defineConfig([
   {
-    input: 'src/index.ts',
-    output: {
-      file: 'dist/index.js',
-      format: 'esm',
-      sourcemap: true,
-    },
-    external,
-    resolve: {
-      conditionNames: ['import', 'module', 'default'],
-    },
-  },
-  {
-    input: 'src/server.ts',
+    input: 'src/server/index.ts',
     output: {
       file: 'dist/server.js',
       format: 'esm',
@@ -53,7 +40,7 @@ export default defineConfig([
     },
   },
   {
-    input: 'src/client.ts',
+    input: 'src/client/index.ts',
     output: {
       file: 'dist/client.js',
       format: 'esm',

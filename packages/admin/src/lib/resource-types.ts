@@ -183,6 +183,26 @@ export interface ListFilter {
   type: 'select' | 'date-range' | 'text';
 }
 
+export interface BulkActionConfig {
+  confirm?: {
+    destructive?: boolean;
+    message: string;
+    title: string;
+  };
+  dialog?: {
+    fields: Array<{
+      label: string;
+      name: string;
+      options?: string[];
+      type: 'text' | 'select';
+    }>;
+    title: string;
+  };
+  icon?: string;
+  key: string;
+  label: string;
+}
+
 export interface ListViewConfig {
   actions?: {
     clone?: boolean;
@@ -190,7 +210,7 @@ export interface ListViewConfig {
     edit?: boolean;
     show?: boolean;
   };
-  bulkActions?: boolean;
+  bulkActions?: BulkActionConfig[];
   columns?: string[];
   defaultSort?: { direction: 'asc' | 'desc'; field: string };
   filters?: ListFilter[];
@@ -438,19 +458,3 @@ export function autoGenerateField(
       return baseConfig as FieldConfig;
   }
 }
-
-export type InferFieldValue<T extends FieldConfig> = T extends {
-  type: 'boolean';
-}
-  ? boolean
-  : T extends { type: 'number' | 'integer' }
-    ? number
-    : T extends { type: 'json' }
-      ? unknown
-      : T extends { type: 'multiselect' }
-        ? (string | number)[]
-        : string;
-
-export type ResourceData<T extends FieldConfig[]> = {
-  [K in T[number] as K['name']]: InferFieldValue<K>;
-};
