@@ -1,21 +1,29 @@
 'use client';
 
+import { AuthProvider } from '@/context/auth-context';
 import { AdminContextProvider } from '@/hooks';
 import { ResourcesProvider } from '@/hooks/use-resources';
-import type { IResourceItem } from '@/types';
+import type { AuthClient, IResourceItem } from '@/types';
 import { Layout } from '@/ui/layout/layout';
 
 export interface AdminProviderProps {
+  authClient: AuthClient;
   children: React.ReactNode;
   resources: IResourceItem[];
 }
 
-export const AdminProvider = ({ children, resources }: AdminProviderProps) => {
+export const AdminProvider = ({
+  children,
+  resources,
+  authClient,
+}: AdminProviderProps) => {
   return (
-    <AdminContextProvider>
-      <ResourcesProvider resources={resources}>
-        <Layout>{children}</Layout>
-      </ResourcesProvider>
-    </AdminContextProvider>
+    <AuthProvider authClient={authClient}>
+      <AdminContextProvider>
+        <ResourcesProvider resources={resources}>
+          <Layout>{children}</Layout>
+        </ResourcesProvider>
+      </AdminContextProvider>
+    </AuthProvider>
   );
 };

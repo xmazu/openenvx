@@ -59,6 +59,28 @@ export interface AuthProvider {
   onError?: (error: unknown) => Promise<unknown>;
 }
 
+export interface AuthUser {
+  email?: string;
+  id: string;
+  image?: string;
+  name?: string;
+  role?: string | string[];
+  [key: string]: unknown;
+}
+
+export interface AuthSession {
+  token?: string;
+  user: AuthUser;
+}
+
+export interface AuthClient {
+  getSession: () => Promise<AuthSession | null>;
+  onSessionChange?: (
+    callback: (session: AuthSession | null) => void
+  ) => () => void;
+  signOut: () => Promise<void>;
+}
+
 export interface AdminOptions {
   authProvider?: AuthProvider;
   resources?: IResourceItem[];

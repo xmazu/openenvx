@@ -1,66 +1,33 @@
-import { createAdmin } from "@openenvx/admin/server";
-import { type NextRequest } from "next/server";
+import {
+  createAdmin,
+  createBetterAuthTokenExtractor,
+  withAuth,
+} from "@openenvx/admin/server";
+import type { NextRequest } from "next/server";
 
-// Define your admin configuration with hooks here
-// This file is generated once - you can customize hooks per resource
-export const admin = createAdmin({
-  postgrestUrl: process.env.POSTGREST_URL || "http://localhost:3001",
-  getToken: (request: NextRequest) => {
-    // Get token from session/cookie if using authentication
-    // For now, return null to use PostgREST anonymous role
-    return null;
-  },
-  resources: {
-    // Example: Add hooks for users resource
-    // users: {
-    //   hooks: {
-    //     beforeCreate: async (data, context) => {
-    //       // Transform data before creation
-    //       // e.g., hash password, generate slug, validate email
-    //       return data;
-    //     },
-    //     afterCreate: async (data, context) => {
-    //       // Side effects after creation
-    //       // e.g., send welcome email, create audit log
-    //     },
-    //     beforeUpdate: async (data, id, context) => {
-    //       // Validate or transform before update
-    //       return data;
-    //     },
-    //     afterUpdate: async (data, id, context) => {
-    //       // Side effects after update
-    //     },
-    //     beforeDelete: async (id, context) => {
-    //       // Return false to cancel delete
-    //       // e.g., prevent deleting admin users
-    //       return true;
-    //     },
-    //     afterDelete: async (id, context) => {
-    //       // Cleanup after deletion
-    //       // e.g., delete related files, log activity
-    //     },
-    //     beforeList: async (params, context) => {
-    //       // Modify list query params
-    //       // e.g., add default filters, limit page size
-    //       return params;
-    //     },
-    //     afterList: async (data, context) => {
-    //       // Transform list results
-    //       // e.g., add computed fields, filter sensitive data
-    //       return data;
-    //     },
-    //   },
-    // },
-    // posts: {
-    //   hooks: {
-    //     beforeCreate: async (data, context) => {
-    //       data.slug = data.title?.toLowerCase().replace(/\s+/g, '-');
-    //       return data;
-    //     },
-    //   },
-    // },
-  },
+const extractToken = createBetterAuthTokenExtractor({
+  betterAuthSecret: process.env.BETTER_AUTH_SECRET!,
+  jwtSecret: process.env.ADMIN_JWT_SECRET!,
+  dbRole: process.env.ADMIN_DB_ROLE || "admin_service",
+  requiredRole: process.env.ADMIN_REQUIRED_ROLE || "super_admin",
+  tokenExpirySeconds: Number(process.env.ADMIN_TOKEN_EXPIRY) || 300,
 });
 
-// Export the handler for Next.js route
-export const { GET, POST, PUT, PATCH, DELETE } = admin.handler;
+const admin = createAdmin({
+  postgrestUrl: process.env.POSTGREST_URL || "http://localhost:3001",
+  getToken: (req: NextRequest) => {
+    // withAuth stores token in header to avoid double extraction
+    const tokenFromHeader = req.headers.get("x-admin-token");
+    if (tokenFromHeader) {
+      return tokenFromHeader;
+    }
+    // Fallback to extraction (for non-wrapped handlers)
+    return extractToken(req);
+  },
+  resources: {},
+});
+
+export const { GET, POST, PUT, PATCH, DELETE } = withAuth(admin.handler, {
+  getToken: extractToken,
+  tokenHeader: "x-admin-token",
+});

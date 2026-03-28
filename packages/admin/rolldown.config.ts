@@ -20,6 +20,7 @@ const externalDeps = [
   'react-hook-form',
   '@hookform/resolvers',
   'zod',
+  'jose',
 ];
 
 const external = (id: string) => {

@@ -1,12 +1,16 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useAuth } from '@/context/auth-context';
 import type { AuthProvider } from '@/types';
 
 export function useActiveAuthProvider(): AuthProvider | undefined {
-  return useMemo(() => {
-    // In a real implementation, this would get the auth provider from context
-    // For now, return undefined
-    return undefined;
-  }, []);
+  const { user, signOut } = useAuth();
+
+  return {
+    getIdentity: async <TData = unknown>() => user as TData,
+    logout: async () => {
+      await signOut();
+      return { success: true };
+    },
+  };
 }
