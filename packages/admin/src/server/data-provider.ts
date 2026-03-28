@@ -115,33 +115,24 @@ export interface DataProvider {
   ) => Promise<UpdateResponse<TData>>;
 }
 
-export interface PostgRESTDataProviderConfig {
-  /** PostgREST API base URL */
+export interface DataProviderConfig {
+  /** Proxy API base path (e.g., '/api/admin') */
   apiUrl: string;
-  /** JWT token for authentication */
-  getToken?: () => string | null;
   /** Default headers for all requests */
   headers?: Record<string, string>;
 }
 
 export function createPostgRESTDataProvider(
-  config: PostgRESTDataProviderConfig
+  config: DataProviderConfig
 ): DataProvider {
-  const { apiUrl, getToken, headers: defaultHeaders = {} } = config;
+  const { apiUrl: proxyUrl, headers: defaultHeaders = {} } = config;
 
   const getHeaders = (): HeadersInit => {
-    const headers: HeadersInit = {
+    return {
       'Content-Type': 'application/json',
       Accept: 'application/json',
       ...defaultHeaders,
     };
-
-    const token = getToken?.();
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-
-    return headers;
   };
 
   const buildQueryParams = (params: GetListParams): string => {
@@ -193,7 +184,7 @@ export function createPostgRESTDataProvider(
         sorters,
         filters,
       });
-      const response = await fetch(`${apiUrl}/${resource}${queryParams}`, {
+      const response = await fetch(`${proxyUrl}/${resource}${queryParams}`, {
         method: 'GET',
         headers: getHeaders(),
       });
@@ -221,7 +212,7 @@ export function createPostgRESTDataProvider(
       id,
     }: GetOneParams): Promise<GetOneResponse<TData>> => {
       const response = await fetch(
-        `${apiUrl}/${resource}?id=eq.${id}&limit=1`,
+        `${proxyUrl}/${resource}?id=eq.${id}&limit=1`,
         {
           method: 'GET',
           headers: getHeaders(),
@@ -250,7 +241,7 @@ export function createPostgRESTDataProvider(
       resource,
       variables,
     }: CreateParams<TVariables>): Promise<CreateResponse<TData>> => {
-      const response = await fetch(`${apiUrl}/${resource}`, {
+      const response = await fetch(`${proxyUrl}/${resource}`, {
         method: 'POST',
         headers: {
           ...getHeaders(),
@@ -278,7 +269,7 @@ export function createPostgRESTDataProvider(
       id,
       variables,
     }: UpdateParams<TVariables>): Promise<UpdateResponse<TData>> => {
-      const response = await fetch(`${apiUrl}/${resource}?id=eq.${id}`, {
+      const response = await fetch(`${proxyUrl}/${resource}?id=eq.${id}`, {
         method: 'PATCH',
         headers: {
           ...getHeaders(),
@@ -305,7 +296,7 @@ export function createPostgRESTDataProvider(
       resource,
       id,
     }: DeleteOneParams<TVariables>): Promise<DeleteOneResponse<TData>> => {
-      const response = await fetch(`${apiUrl}/${resource}?id=eq.${id}`, {
+      const response = await fetch(`${proxyUrl}/${resource}?id=eq.${id}`, {
         method: 'DELETE',
         headers: {
           ...getHeaders(),
@@ -322,7 +313,7 @@ export function createPostgRESTDataProvider(
       };
     },
 
-    getApiUrl: () => apiUrl,
+    getApiUrl: () => proxyUrl,
 
     custom: async <
       TData extends BaseRecord = BaseRecord,
@@ -343,7 +334,7 @@ export function createPostgRESTDataProvider(
         ? `?${new URLSearchParams(query as Record<string, string>).toString()}`
         : '';
 
-      const response = await fetch(`${apiUrl}${url}${queryString}`, {
+      const response = await fetch(`${proxyUrl}${url}${queryString}`, {
         method,
         headers: getHeaders(),
         body: payload ? JSON.stringify(payload) : undefined,

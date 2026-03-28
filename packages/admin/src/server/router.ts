@@ -15,7 +15,7 @@ const LABEL_REGEX_LEADING_SPACE = /^\s+/;
 const LABEL_REGEX_EXTRA_SPACES = /\s+/g;
 
 export interface PostgRESTProxyConfig {
-  getToken?: (request: NextRequest) => string | null;
+  getToken?: (request: NextRequest) => Promise<string | null> | string | null;
   postgrestUrl: string;
   transformRequest?: (
     request: NextRequest
@@ -202,16 +202,27 @@ export function createPostgRESTProxy(config: PostgRESTProxyConfig) {
     headers.delete('host');
     headers.set('host', new URL(postgrestUrl).host);
 
-    const token = getToken?.(request);
-    if (token) {
-      headers.set('authorization', `Bearer ${token}`);
+    const token = await getToken?.(request);
+
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Authentication required' },
+        { status: 401 }
+      );
     }
+    headers.set('authorization', `Bearer ${token}`);
 
     if (transformRequest) {
       await transformRequest(request);
     }
 
     try {
+      console.error('[PostgREST Proxy] Forwarding request:', {
+        method: request.method,
+        url: targetUrl.toString(),
+        hasToken: !!token,
+      });
+
       const response = await fetch(targetUrl.toString(), {
         method: request.method,
         headers,
@@ -219,6 +230,16 @@ export function createPostgRESTProxy(config: PostgRESTProxyConfig) {
           ? null
           : await request.text(),
       });
+
+      console.error('[PostgREST Proxy] Response:', {
+        status: response.status,
+        statusText: response.statusText,
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error('[PostgREST Proxy] Error response body:', errorBody);
+      }
 
       const responseHeaders = new Headers(response.headers);
       responseHeaders.delete('content-encoding');
@@ -229,6 +250,7 @@ export function createPostgRESTProxy(config: PostgRESTProxyConfig) {
         headers: responseHeaders,
       });
     } catch (error) {
+      console.error('[PostgREST Proxy] Fetch error:', error);
       return NextResponse.json(
         { error: 'Proxy error', message: String(error) },
         { status: 502 }

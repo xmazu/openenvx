@@ -5,8 +5,7 @@ import { createContext, useContext, useMemo } from 'react';
 import type { DataProvider } from '@/server/data-provider';
 import { createPostgRESTDataProvider } from '@/server/data-provider';
 
-const POSTGREST_URL =
-  process.env.NEXT_PUBLIC_POSTGREST_URL || 'http://localhost:3001';
+const ADMIN_API_URL = '/api/admin';
 
 interface AdminContextValue {
   dataProvider: DataProvider;
@@ -42,7 +41,7 @@ export function AdminContextProvider({
     () =>
       customDataProvider ??
       createPostgRESTDataProvider({
-        apiUrl: POSTGREST_URL,
+        apiUrl: ADMIN_API_URL,
       }),
     [customDataProvider]
   );

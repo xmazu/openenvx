@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, type NextResponse } from 'next/server';
 import type {
   HookContext,
   ListParams,
@@ -10,7 +10,24 @@ export interface ResourceConfig {
   hooks?: ResourceHooks;
 }
 
+export interface AdminAuthConfig {
+  /**
+   * Function to check if request is authenticated.
+   * Should return the token if authenticated, null/undefined if not.
+   * The token will be passed to the request headers for downstream use.
+   */
+  getToken: (request: NextRequest) => Promise<string | null> | string | null;
+
+  /** Optional custom error response when authentication fails */
+  onAuthFailure?: (request: NextRequest) => NextResponse;
+}
+
 export interface AdminConfig extends PostgRESTProxyConfig {
+  /**
+   * Authentication configuration. If not provided, the admin API will be
+   * publicly accessible (not recommended for production).
+   */
+  auth?: AdminAuthConfig;
   resources?: Record<string, ResourceConfig>;
 }
 
@@ -37,8 +54,13 @@ function createHookRegistry(
 }
 
 export function createAdmin(config: AdminConfig) {
-  const { resources = {}, ...proxyConfig } = config;
+  const { resources = {}, auth, ...proxyConfig } = config;
   const hookRegistry = createHookRegistry(resources);
+
+  const proxyConfigWithAuth = {
+    ...proxyConfig,
+    getToken: auth?.getToken,
+  };
 
   async function executeBeforeCreate(
     resourceName: string,
@@ -135,9 +157,9 @@ export function createAdmin(config: AdminConfig) {
     }
   }
 
-  const proxy = createPostgRESTProxy(proxyConfig);
+  const proxy = createPostgRESTProxy(proxyConfigWithAuth);
 
-  const handler = {
+  const rawHandler = {
     GET: async (
       request: NextRequest,
       context: { params: Promise<{ path: string[] }> }
@@ -326,6 +348,8 @@ export function createAdmin(config: AdminConfig) {
 
     PUT: proxy.PUT,
   };
+
+  const handler = rawHandler;
 
   return {
     handler,

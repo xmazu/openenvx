@@ -1,7 +1,8 @@
 import "@{{projectName}}/ui/globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { RefineProvider } from "@openenvx/admin/components";
+import { AdminProvider } from "@openenvx/admin/components";
+import { authClient } from "@{{projectName}}/auth";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -9,6 +10,18 @@ export const metadata: Metadata = {
   title: "Admin Panel",
   description: "Admin panel powered by OpenEnvX",
 };
+
+const resources = [
+  // Add your resources here
+  // Example:
+  // {
+  //   name: "users",
+  //   list: "/users",
+  //   create: "/users/create",
+  //   edit: "/users/edit",
+  //   show: "/users/show",
+  // },
+];
 
 export default function RootLayout({
   children,
@@ -18,7 +31,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <RefineProvider>{children}</RefineProvider>
+        <AdminProvider resources={resources} authClient={authClient}>
+          {children}
+        </AdminProvider>
       </body>
     </html>
   );

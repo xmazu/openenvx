@@ -31,6 +31,7 @@ export interface ListActionsSlotProps {
   record: Record<string, unknown>;
 }
 
+// TODO:
 export interface ListViewSlots {
   actions?: (
     props: ListActionsSlotProps & { defaultActions: ReactNode }

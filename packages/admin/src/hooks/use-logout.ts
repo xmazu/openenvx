@@ -1,27 +1,25 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
+import { useAuth } from '@/context/auth-context';
 
 export interface UseLogoutResult {
   isPending: boolean;
-  mutate: () => void;
+  mutate: () => Promise<void>;
 }
 
 export function useLogout(): UseLogoutResult {
-  const router = useRouter();
+  const { signOut } = useAuth();
   const [isPending, setIsPending] = useState(false);
 
-  const mutate = useCallback(() => {
+  const mutate = useCallback(async () => {
     setIsPending(true);
-
-    // In a real implementation, this would call the auth provider's logout
-    // For now, just redirect to login or home
-    setTimeout(() => {
+    try {
+      await signOut();
+    } finally {
       setIsPending(false);
-      router.push('/');
-    }, 500);
-  }, [router]);
+    }
+  }, [signOut]);
 
   return {
     mutate,
