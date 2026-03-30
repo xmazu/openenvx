@@ -1,5 +1,4 @@
-import type { ReactNode } from 'react';
-import type { FieldConfig } from '@/lib/resource-types';
+import type { FieldConfig, ResourceHooks } from '@/lib/resource-types';
 
 export interface NestedResourceConfig {
   fields?: FieldConfig[];
@@ -16,6 +15,7 @@ export interface ResourceConfig {
     layout?: 'vertical' | 'horizontal' | 'grid';
     columns?: number;
   };
+  hooks?: ResourceHooks;
   icon?: string;
   label: string;
   list?: {
@@ -33,12 +33,12 @@ export interface ResourceItem {
   create?: string;
   displayField?: string;
   edit?: string;
-  icon?: ReactNode;
+  icon?: string;
   label: string;
   list: string;
   meta?: {
     label?: string;
-    icon?: ReactNode;
+    icon?: string;
     [key: string]: unknown;
   };
   name: string;
@@ -49,12 +49,12 @@ export interface ResourceItem {
 export interface NestedResourceItem {
   create?: string;
   edit?: string;
-  icon?: ReactNode;
+  icon?: string;
   label: string;
   list: string;
   meta?: {
     label?: string;
-    icon?: ReactNode;
+    icon?: string;
     [key: string]: unknown;
   };
   name: string;
@@ -64,12 +64,12 @@ export interface NestedResourceItem {
 
 export interface TreeMenuItem {
   children?: TreeMenuItem[];
-  icon?: ReactNode;
+  icon?: string;
   key: string;
   label: string;
   meta?: {
     label?: string;
-    icon?: ReactNode;
+    icon?: string;
     [key: string]: unknown;
   };
   name: string;
@@ -78,7 +78,7 @@ export interface TreeMenuItem {
 
 export interface BreadcrumbItem {
   href?: string;
-  icon?: ReactNode;
+  icon?: string;
   label: string;
 }
 

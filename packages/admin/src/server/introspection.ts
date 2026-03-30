@@ -157,43 +157,44 @@ export async function fetchAllSchemas(
   return schemas;
 }
 
-/**
- * Fetch reference data for foreign key autocomplete
- */
 export async function fetchReferenceData(
   tableName: string,
   searchTerm?: string,
-  limit = 50
-): Promise<{ id: string; label: string }[]> {
+  limit = 50,
+  displayField = 'name'
+): Promise<Record<string, unknown>[]> {
   const client = getClient();
 
-  // Try to find a display column (name, title, email, etc.)
   const columns = await fetchColumns(tableName);
-  const displayColumn =
-    columns.find((c) => c.name === 'name')?.name ||
-    columns.find((c) => c.name === 'title')?.name ||
-    columns.find((c) => c.name === 'email')?.name ||
-    columns.find((c) => c.name === 'id')?.name;
-
   const pkColumn = columns.find((c) => c.isPrimaryKey)?.name || 'id';
-  const safeDisplayColumn = displayColumn || pkColumn;
 
-  const searchPattern = `%${searchTerm}%`;
+  const columnsToFetch = new Set([pkColumn]);
+
+  if (columns.some((c) => c.name === displayField)) {
+    columnsToFetch.add(displayField);
+  }
+
+  const columnList = Array.from(columnsToFetch)
+    .map((c) => `"${c}"`)
+    .join(', ');
 
   if (searchTerm) {
+    const searchPattern = `%${searchTerm}%`;
+    const searchCondition = `"${displayField}"::text ILIKE '${searchPattern}'`;
+
     const results = await client.unsafe(`
-      SELECT "${pkColumn}" as id, "${safeDisplayColumn}" as label
+      SELECT ${columnList}
       FROM "${tableName}"
-      WHERE "${safeDisplayColumn}"::text ILIKE '${searchPattern}'
+      WHERE ${searchCondition}
       LIMIT ${limit}
     `);
-    return results as unknown as { id: string; label: string }[];
+    return results as unknown as Record<string, unknown>[];
   }
 
   const results = await client.unsafe(`
-    SELECT "${pkColumn}" as id, "${safeDisplayColumn}" as label
+    SELECT ${columnList}
     FROM "${tableName}"
     LIMIT ${limit}
   `);
-  return results as unknown as { id: string; label: string }[];
+  return results as unknown as Record<string, unknown>[];
 }

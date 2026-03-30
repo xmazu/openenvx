@@ -1,3 +1,4 @@
+export { defineResources } from '../lib/define-resources';
 export {
   type Admin,
   type AdminAuthConfig,
@@ -31,3 +32,8 @@ export {
   createPostgRESTProxy,
   type PostgRESTProxyConfig,
 } from '../server/router';
+export type {
+  ResourceConfig,
+  ResourceItem,
+  ResourcesConfig,
+} from '../types/resources';

@@ -1,5 +1,6 @@
 'use client';
 
+import * as Icons from 'lucide-react';
 import { ChevronRight, ListIcon } from 'lucide-react';
 import Link from 'next/link';
 import type React from 'react';
@@ -273,11 +274,20 @@ function getDisplayName(item: TreeMenuItem) {
 }
 
 interface IconProps {
-  icon: React.ReactNode;
+  icon: string | undefined;
   isSelected?: boolean;
 }
 
 function ItemIcon({ icon, isSelected }: IconProps) {
+  const IconComponent = icon
+    ? (
+        Icons as unknown as Record<
+          string,
+          React.ComponentType<{ className?: string }>
+        >
+      )[icon]
+    : null;
+
   return (
     <div
       className={cn('w-4', {
@@ -285,7 +295,11 @@ function ItemIcon({ icon, isSelected }: IconProps) {
         'text-sidebar-primary-foreground': isSelected,
       })}
     >
-      {icon ?? <ListIcon />}
+      {IconComponent ? (
+        <IconComponent className="h-4 w-4" />
+      ) : (
+        <ListIcon className="h-4 w-4" />
+      )}
     </div>
   );
 }

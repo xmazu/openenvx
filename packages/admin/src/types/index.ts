@@ -4,14 +4,14 @@ export type BaseKey = string | number;
 
 export interface ResourceMeta {
   group?: boolean;
-  icon?: React.ReactNode;
+  icon?: string;
   label?: string;
   [key: string]: unknown;
 }
 
 export interface TreeMenuItem {
   children?: TreeMenuItem[];
-  icon?: React.ReactNode;
+  icon?: string;
   key?: string;
   label?: string;
   meta?: ResourceMeta;
@@ -21,7 +21,7 @@ export interface TreeMenuItem {
 
 export interface BreadcrumbItem {
   href?: string;
-  icon?: React.ReactNode;
+  icon?: string;
   label: string;
 }
 

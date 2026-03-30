@@ -1,9 +1,11 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import type { ResourceItem } from '@/types/resources';
 import { fetchReferenceData } from './introspection';
 
 export interface PostgRESTProxyConfig {
   getToken?: (request: NextRequest) => Promise<string | null> | string | null;
   postgrestUrl: string;
+  resources?: ResourceItem[];
   transformRequest?: (
     request: NextRequest
   ) => Promise<NextRequest> | NextRequest;
@@ -14,7 +16,7 @@ export interface RouteContext {
 }
 
 export function createPostgRESTProxy(config: PostgRESTProxyConfig) {
-  const { postgrestUrl, getToken, transformRequest } = config;
+  const { postgrestUrl, getToken, resources = [], transformRequest } = config;
 
   async function handleRelationships(
     request: NextRequest,
@@ -36,9 +38,30 @@ export function createPostgRESTProxy(config: PostgRESTProxyConfig) {
       const url = new URL(request.url);
       const search = url.searchParams.get('search') || undefined;
       const limit = Number(url.searchParams.get('limit')) || 50;
+      const sourceResource = url.searchParams.get('sourceResource');
+      const sourceField = url.searchParams.get('sourceField');
 
-      const data = await fetchReferenceData(tableName, search, limit);
-      return NextResponse.json(data);
+      let displayField = 'name';
+
+      if (sourceResource && sourceField) {
+        const sourceRes = resources.find((r) => r.name === sourceResource);
+        if (sourceRes?.config?.fields) {
+          const field = sourceRes.config.fields.find(
+            (f) => f.name === sourceField && f.type === 'reference'
+          );
+          if (field && 'reference' in field && field.reference?.displayField) {
+            displayField = field.reference.displayField;
+          }
+        }
+      }
+
+      const data = await fetchReferenceData(
+        tableName,
+        search,
+        limit,
+        displayField
+      );
+      return NextResponse.json({ data, displayField });
     } catch (error) {
       return NextResponse.json(
         { error: 'Failed to fetch reference data', message: String(error) },

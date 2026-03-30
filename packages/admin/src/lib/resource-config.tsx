@@ -1,4 +1,3 @@
-import { LayoutDashboard } from 'lucide-react';
 import type { ResourceItem } from '@/types/resources';
 
 export const resources: ResourceItem[] = [
@@ -8,7 +7,7 @@ export const resources: ResourceItem[] = [
     list: '/',
     meta: {
       label: 'Dashboard',
-      icon: <LayoutDashboard className="h-4 w-4" />,
+      icon: 'LayoutDashboard',
     },
   },
 ];

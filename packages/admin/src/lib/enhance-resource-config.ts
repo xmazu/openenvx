@@ -6,9 +6,67 @@ import type {
   ResourceItem,
 } from '@/types/resources';
 
+function validateResourceConfig(
+  resourceName: string,
+  config: ResourceConfig,
+  tableSchema: IntrospectedTable
+): void {
+  if (!config.fields) {
+    return;
+  }
+
+  const definedFieldNames = new Set(config.fields.map((f) => f.name));
+
+  for (const column of tableSchema.columns) {
+    if (column.isPrimaryKey) {
+      continue;
+    }
+
+    if (column.defaultValue !== null) {
+      continue;
+    }
+
+    if (!(column.isNullable || definedFieldNames.has(column.name))) {
+      console.warn(
+        `[${resourceName}] Column "${column.name}" is NOT NULL in the database but is not defined in your resource config. ` +
+          'This may cause validation errors when creating records.'
+      );
+    }
+  }
+
+  for (const field of config.fields) {
+    const column = tableSchema.columns.find((c) => c.name === field.name);
+    if (!column) {
+      continue;
+    }
+
+    if (field.required === true && column.isNullable) {
+      console.warn(
+        `[${resourceName}] Field "${field.name}" is marked as required in your config, ` +
+          'but the database column allows NULL values. Consider setting required: false ' +
+          'or making the column NOT NULL in your schema.'
+      );
+    }
+
+    if (
+      field.required !== true &&
+      !column.isNullable &&
+      column.defaultValue === null &&
+      !column.isPrimaryKey
+    ) {
+      console.warn(
+        `[${resourceName}] Field "${field.name}" is NOT NULL in the database with no default value, ` +
+          'but is not marked as required in your config. Consider setting required: true ' +
+          'to prevent validation errors.'
+      );
+    }
+  }
+}
+
 export function enhanceResourceConfigWithIntrospection(
   config: ResourceConfig | undefined,
-  tableSchema: IntrospectedTable | undefined
+  tableSchema: IntrospectedTable | undefined,
+  resourceName?: string
 ): ResourceConfig | undefined {
   if (!config) {
     return undefined;
@@ -16,6 +74,10 @@ export function enhanceResourceConfigWithIntrospection(
 
   if (!(tableSchema && config.fields) || config.fields.length === 0) {
     return config;
+  }
+
+  if (resourceName) {
+    validateResourceConfig(resourceName, config, tableSchema);
   }
 
   const enhancedFields: FieldConfig[] = config.fields.map((field) => {
@@ -57,7 +119,8 @@ export function enhanceResourcesWithIntrospection(
       ...resource,
       config: enhanceResourceConfigWithIntrospection(
         resource.config,
-        tableSchema
+        tableSchema,
+        resource.name
       ),
     };
   });

@@ -23,11 +23,14 @@ type RelationshipFieldConfig = FieldConfig & {
     displayField?: string;
     filter?: (query: unknown) => unknown;
     table: string;
+    valueField?: string;
   };
 };
 
 interface RelationshipFieldProps {
   field: RelationshipFieldConfig;
+  fieldName: string;
+  resourceName: string;
 }
 
 interface RelationshipOption {
@@ -53,7 +56,11 @@ function getDisplayText(
   return `Select ${field.label || field.name}...`;
 }
 
-export function RelationshipField({ field }: RelationshipFieldProps) {
+export function RelationshipField({
+  field,
+  fieldName,
+  resourceName,
+}: RelationshipFieldProps) {
   const form = useFormContext();
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<RelationshipOption[]>([]);
@@ -62,8 +69,7 @@ export function RelationshipField({ field }: RelationshipFieldProps) {
   const abortRef = useRef<AbortController | null>(null);
 
   const value = form.watch(field.name);
-  const displayField =
-    field.displayColumn || field.reference.displayField || 'name';
+  const valueField = field.reference.valueField || 'id';
 
   const loadOptions = useCallback(
     async (search?: string) => {
@@ -78,6 +84,8 @@ export function RelationshipField({ field }: RelationshipFieldProps) {
         if (search) {
           params.append('search', search);
         }
+        params.append('sourceResource', resourceName);
+        params.append('sourceField', fieldName);
 
         const response = await fetch(
           `/api/admin/relationships/${field.reference.table}?${params}`,
@@ -88,12 +96,19 @@ export function RelationshipField({ field }: RelationshipFieldProps) {
           throw new Error('Failed to load options');
         }
 
-        const data = await response.json();
+        const result = await response.json();
+        const { data, displayField } = result;
         setOptions(
-          data.map((item: Record<string, unknown>) => ({
-            value: item.id as string | number,
-            label: (item[displayField] as string) || String(item.id),
-          }))
+          data.map((item: Record<string, unknown>) => {
+            const fieldValue = item[valueField] as string | number;
+            const labelValue = item[displayField];
+            const label =
+              labelValue !== null && labelValue !== undefined
+                ? String(labelValue)
+                : String(fieldValue);
+
+            return { value: fieldValue, label };
+          })
         );
       } catch (error) {
         if (error instanceof Error && error.name !== 'AbortError') {
@@ -103,7 +118,7 @@ export function RelationshipField({ field }: RelationshipFieldProps) {
         setLoading(false);
       }
     },
-    [field.reference.table, displayField]
+    [field.reference.table, valueField, resourceName, fieldName]
   );
 
   useEffect(() => {

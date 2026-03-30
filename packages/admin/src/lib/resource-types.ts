@@ -31,11 +31,8 @@ export interface ReferenceConfig {
   displayField?: string;
   filter?: (query: unknown) => unknown;
   table: string;
+  valueField?: string;
 }
-
-export type ConditionalFunction = (data: Record<string, unknown>) => boolean;
-
-export type ComputedFunction = (data: Record<string, unknown>) => unknown;
 
 export interface ComputedConfig {
   deps: string[];
@@ -45,8 +42,8 @@ export interface ComputedConfig {
 
 export interface BaseFieldConfig {
   className?: string;
-  computed?: ComputedConfig | ComputedFunction;
-  condition?: ConditionalFunction;
+  computed?: ComputedConfig | ((data: Record<string, unknown>) => unknown);
+  condition?: (data: Record<string, unknown>) => boolean;
   defaultValue?: unknown;
   description?: string;
   hidden?: boolean;
@@ -241,15 +238,6 @@ export type FormLayoutItem =
       title?: string;
       type: 'group';
     };
-
-export interface FormFieldGroup {
-  columns?: number;
-  fields: string[];
-  label?: string;
-  title?: string;
-}
-
-export type FormLayout = 'vertical' | 'horizontal' | 'grid';
 
 export interface FormViewConfig {
   columns?: number;

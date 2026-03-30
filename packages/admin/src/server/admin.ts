@@ -4,11 +4,8 @@ import type {
   ListParams,
   ResourceHooks,
 } from '@/lib/resource-types';
+import type { ResourceItem } from '@/types/resources';
 import { createPostgRESTProxy, type PostgRESTProxyConfig } from './router';
-
-export interface ResourceConfig {
-  hooks?: ResourceHooks;
-}
 
 export interface AdminAuthConfig {
   /**
@@ -30,7 +27,7 @@ export interface AdminConfig extends PostgRESTProxyConfig {
    * publicly accessible (not recommended for production).
    */
   auth?: AdminAuthConfig;
-  resources?: Record<string, ResourceConfig>;
+  resources?: ResourceItem[];
 }
 
 interface HookRegistry {
@@ -38,14 +35,12 @@ interface HookRegistry {
   has: (resourceName: string) => boolean;
 }
 
-function createHookRegistry(
-  resources: Record<string, ResourceConfig>
-): HookRegistry {
+function createHookRegistry(resources: ResourceItem[]): HookRegistry {
   const registry = new Map<string, ResourceHooks>();
 
-  for (const [name, config] of Object.entries(resources)) {
-    if (config.hooks) {
-      registry.set(name, config.hooks);
+  for (const resource of resources) {
+    if (resource.config?.hooks) {
+      registry.set(resource.name, resource.config.hooks);
     }
   }
 
@@ -56,12 +51,13 @@ function createHookRegistry(
 }
 
 export function createAdmin(config: AdminConfig) {
-  const { resources = {}, auth, ...proxyConfig } = config;
+  const { resources = [], auth, ...proxyConfig } = config;
   const hookRegistry = createHookRegistry(resources);
 
   const proxyConfigWithAuth = {
     ...proxyConfig,
     getToken: auth?.getToken,
+    resources,
   };
 
   async function executeBeforeCreate(
@@ -357,6 +353,7 @@ export function createAdmin(config: AdminConfig) {
     handler,
     postgrestUrl: proxyConfig.postgrestUrl,
     registry: hookRegistry,
+    resources,
   };
 }
 

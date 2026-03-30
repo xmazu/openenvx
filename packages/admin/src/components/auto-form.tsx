@@ -10,6 +10,7 @@ import {
 } from 'react-hook-form';
 import { FieldArray } from '@/components/field-array';
 import { RelationshipField } from '@/components/relationship-field';
+import { useResourceParams } from '@/hooks/use-resource-params';
 import type {
   ArrayFieldConfig,
   FieldConfig,
@@ -98,7 +99,13 @@ function ComputedField({ field }: { field: FieldConfig }) {
   return <input type="hidden" {...form.register(field.name)} />;
 }
 
-function FormField({ field }: { field: FieldConfig }) {
+function FormField({
+  field,
+  resourceName,
+}: {
+  field: FieldConfig;
+  resourceName?: string;
+}) {
   const form = useFormContext();
   const error = form.formState.errors[field.name];
 
@@ -114,7 +121,7 @@ function FormField({ field }: { field: FieldConfig }) {
       {field.computed ? (
         <ComputedField field={field} />
       ) : (
-        <FormInput field={field} id={fieldId} />
+        <FormInput field={field} id={fieldId} resourceName={resourceName} />
       )}
 
       {error && (
@@ -128,7 +135,15 @@ function FormField({ field }: { field: FieldConfig }) {
   );
 }
 
-function FormInput({ field, id }: { field: FieldConfig; id?: string }) {
+function FormInput({
+  field,
+  id,
+  resourceName,
+}: {
+  field: FieldConfig;
+  id?: string;
+  resourceName?: string;
+}) {
   const form = useFormContext();
   const { register } = form;
 
@@ -221,7 +236,13 @@ function FormInput({ field, id }: { field: FieldConfig; id?: string }) {
       return <FieldArray field={field as ArrayFieldConfig} />;
 
     case 'reference':
-      return <RelationshipField field={field} />;
+      return (
+        <RelationshipField
+          field={field}
+          fieldName={field.name}
+          resourceName={resourceName || ''}
+        />
+      );
 
     default:
       return <input type="text" {...commonProps} />;
@@ -237,6 +258,9 @@ export function AutoForm({
   className,
   mode,
 }: AutoFormProps) {
+  const { resource } = useResourceParams();
+  const resourceName = resource?.name;
+
   const visibleFields = useMemo(
     () => resourceConfig.fields.filter((f) => !f.hidden),
     [resourceConfig.fields]
@@ -300,7 +324,7 @@ export function AutoForm({
                   >
                     {groupFields.map((field) => (
                       <ConditionalField field={field} key={field.name}>
-                        <FormField field={field} />
+                        <FormField field={field} resourceName={resourceName} />
                       </ConditionalField>
                     ))}
                   </CardContent>
@@ -322,7 +346,7 @@ export function AutoForm({
                 >
                   {groupFields.map((field) => (
                     <ConditionalField field={field} key={field.name}>
-                      <FormField field={field} />
+                      <FormField field={field} resourceName={resourceName} />
                     </ConditionalField>
                   ))}
                 </div>
@@ -343,7 +367,7 @@ export function AutoForm({
       >
         {visibleFields.map((field) => (
           <ConditionalField field={field} key={field.name}>
-            <FormField field={field} />
+            <FormField field={field} resourceName={resourceName} />
           </ConditionalField>
         ))}
       </div>
