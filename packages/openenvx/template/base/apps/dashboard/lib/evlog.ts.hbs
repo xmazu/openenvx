@@ -1,0 +1,32 @@
+import type { DrainContext } from 'evlog'
+import { createEvlog } from 'evlog/next'
+import { createInstrumentation } from 'evlog/next/instrumentation'
+import { createUserAgentEnricher, createRequestSizeEnricher } from 'evlog/enrichers'
+import { createFsDrain } from 'evlog/fs'
+import { createDrainPipeline } from 'evlog/pipeline'
+
+const enrichers = [createUserAgentEnricher(), createRequestSizeEnricher()]
+
+const pipeline = createDrainPipeline<DrainContext>({
+  batch: { size: 50, intervalMs: 5000 },
+})
+
+const drain = pipeline(createFsDrain())
+
+export const { withEvlog, useLogger, log, createError } = createEvlog({
+  service: '{{projectName}}',
+  sampling: {
+    rates: { info: 10 },
+    keep: [{ status: 400 }, { duration: 1000 }],
+  },
+  enrich: (ctx) => {
+    for (const enricher of enrichers) enricher(ctx)
+  },
+  drain,
+})
+
+export const { register, onRequestError } = createInstrumentation({
+  service: '{{projectName}}',
+  drain,
+  captureOutput: true,
+})
